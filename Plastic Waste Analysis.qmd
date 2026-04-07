@@ -3,23 +3,48 @@ title: "Environmental Plastic Waste Analysis"
 format: html
 ---
 
-## Data
+## Context
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+The Environmental Plastic Waste Data comes from the **"Break Free from Plastic"** movement and covers information on plastic use across the world, organized by country, type of plastic, source of plastic, and year (2019 or 2020). The data comes from brand audits and cleanups conducted by volunteers. Some limitations of this dataset are that the countries will not have an equal sampling effort and the data depends on volunteer participation. Additionally, the amount of collected waste does not necessarily tell us how much plastic there is in general. Aside from those, the data is useful to help identify major corporate contributors to plastic pollution in our environment. It can also help inform environmental policy workers and provide corporate accountability. 
 
-## Running Code
+## Data Cleaning
 
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+It seems as though initially the 2019 and 2020 datasets were imported separately from directories. Only the csv files were chosen from those respective directories. We then read the two CSV files with specified column types to prevent any confusion. The code then combines multiple files into a single file for each year (one for 2019 and one for 2020) through `map_dfr`. Next, the code cleans column names for both files using the `janitor::clean_names()` command, and makes the names consistent across years. A year column is also added to the datasets. 
 
-```{r}
-1 + 1
-```
+Individual Changes: 
 
-You can add options to executable code like this 
+2020: 
 
-```{r}
-#| echo: false
-2 * 2
-```
+- The `Grand_Total` variable is converted from character to numeric.
 
-The `echo: false` option disables the printing of code (only output is displayed).
+2019: 
+
+- The country names are extracted from file names & stored in a `country` column. 
+
+- Combines duplicate columns `pp_2` and `pp` as well as `ps` & `ps_2`. 
+
+- Handles missing values using `is.na` and an `ifelse()` statement. 
+
+- Drops `ps_2` & `pp_2`
+
+Lastly, the 2019 and 2020 datasets are merged using `bind_rows()`and exported to a csv file. 
+
+
+## Research Questions 
+
+Using Current Data: 
+
+1) Have certain plastic types (e.g. Polystyrene or High density polyethylene) become more or less common over time?
+
+2) How does the composition of plastic waste differ between countries?
+
+Using Supplemental Data: 
+
+1) Is there a relationship between a country’s GDP and the amount of branded plastic pollution collected?
+
+2) Do countries with stricter plastic regulations show lower counts of certain plastic types?
+
+## Visualizations
+
+![](YearsVsTotalP.png)
+![](RQ CountryGDP.png)
