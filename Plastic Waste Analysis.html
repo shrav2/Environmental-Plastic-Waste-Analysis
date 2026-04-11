@@ -6,6 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="author" content="Shravani Subramanian">
 
 <title>Environmental Plastic Waste Analysis</title>
 <style>
@@ -19,6 +20,41 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -53,6 +89,12 @@ ul.task-list li input[type="checkbox"] {
 
 <div class="quarto-title-meta">
 
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Shravani Subramanian </p>
+          </div>
+  </div>
     
   
     
@@ -63,6 +105,22 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+✔ dplyr     1.2.1     ✔ readr     2.1.6
+✔ forcats   1.0.1     ✔ stringr   1.6.0
+✔ ggplot2   4.0.2     ✔ tibble    3.3.1
+✔ lubridate 1.9.5     ✔ tidyr     1.3.2
+✔ purrr     1.2.1     
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ dplyr::filter() masks stats::filter()
+✖ dplyr::lag()    masks stats::lag()
+ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 <section id="context" class="level2">
 <h2 class="anchored" data-anchor-id="context">Context</h2>
 <p>The Environmental Plastic Waste Data comes from the <strong>“Break Free from Plastic”</strong> movement and covers information on plastic use across the world, organized by country, type of plastic, source of plastic, and year (2019 or 2020). The data comes from brand audits and cleanups conducted by volunteers. Some limitations of this dataset are that the countries will not have an equal sampling effort and the data depends on volunteer participation. Additionally, the amount of collected waste does not necessarily tell us how much plastic there is in general. Aside from those, the data is useful to help identify major corporate contributors to plastic pollution in our environment. It can also help inform environmental policy workers and provide corporate accountability.</p>
@@ -99,7 +157,1101 @@ ul.task-list li input[type="checkbox"] {
 </section>
 <section id="visualizations" class="level2">
 <h2 class="anchored" data-anchor-id="visualizations">Visualizations</h2>
-<p><img src="YearsVsTotalP.png" class="img-fluid"> <img src="RQ%20CountryGDP.png" class="img-fluid"></p>
+<p><img src="YearsVsTotalP.png" class="img-fluid"></p>
+<p><img src="RQ%20CountryGDP.png" class="img-fluid"></p>
+</section>
+<section id="checkpoint-2" class="level1">
+<h1>Checkpoint 2</h1>
+<section id="reading-in-the-data" class="level2">
+<h2 class="anchored" data-anchor-id="reading-in-the-data">Reading in the Data</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>plastics <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_csv</span>(<span class="st">'https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2021/2021-01-26/plastics.csv'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Rows: 13380 Columns: 14
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+chr  (2): country, parent_company
+dbl (12): year, empty, hdpe, ldpe, o, pet, pp, ps, pvc, grand_total, num_eve...
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+</div>
+</div>
+</section>
+<section id="proportion-of-polyester-plastic-between-2019-2020-by-country" class="level2">
+<h2 class="anchored" data-anchor-id="proportion-of-polyester-plastic-between-2019-2020-by-country">Proportion of Polyester Plastic Between 2019 &amp; 2020 By Country</h2>
+<p><em>New Column: proportion of Polyester Plastics for each year</em></p>
+<p><em>Uses iteration, no custom function</em></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>pet_props <span class="ot">&lt;-</span> plastics <span class="sc">|&gt;</span> </span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(year, country) <span class="sc">|&gt;</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>   <span class="at">prop =</span> <span class="fu">sum</span>(pet, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)<span class="sc">/</span><span class="fu">sum</span>(grand_total, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>   )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`summarise()` has regrouped the output.
+ℹ Summaries were computed grouped by year and country.
+ℹ Output is grouped by year.
+ℹ Use `summarise(.groups = "drop_last")` to silence this message.
+ℹ Use `summarise(.by = c(year, country))` for per-operation grouping
+  (`?dplyr::dplyr_by`) instead.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>pet_props</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 107 × 3
+# Groups:   year [2]
+    year country        prop
+   &lt;dbl&gt; &lt;chr&gt;         &lt;dbl&gt;
+ 1  2019 Argentina    0.516 
+ 2  2019 Australia    1     
+ 3  2019 Bangladesh   0     
+ 4  2019 Benin        1     
+ 5  2019 Bhutan       1     
+ 6  2019 Brazil       0.0465
+ 7  2019 Bulgaria     1     
+ 8  2019 Burkina Faso 0.559 
+ 9  2019 Cameroon     0.380 
+10  2019 Canada       0     
+# ℹ 97 more rows</code></pre>
+</div>
+</div>
+<p><em>Custom Function</em></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>Yearly_PET_Prop <span class="ot">&lt;-</span> <span class="cf">function</span>(input_country){</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  pet_props <span class="sc">|&gt;</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(country <span class="sc">==</span> input_country) </span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>countries <span class="ot">&lt;-</span> plastics <span class="sc">|&gt;</span> </span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(country) <span class="sc">|&gt;</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(country)</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>result <span class="ot">&lt;-</span> countries <span class="sc">|&gt;</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">map</span>(<span class="at">.f =</span> Yearly_PET_Prop) <span class="sc">|&gt;</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_names</span>(countries)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<details>
+<summary>
+Show table output
+</summary>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>$Argentina
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country    prop
+  &lt;dbl&gt; &lt;chr&gt;     &lt;dbl&gt;
+1  2019 Argentina 0.516
+2  2020 Argentina 0.133
+
+$Australia
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country     prop
+  &lt;dbl&gt; &lt;chr&gt;      &lt;dbl&gt;
+1  2019 Australia 1     
+2  2020 Australia 0.0845
+
+$Bangladesh
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country     prop
+  &lt;dbl&gt; &lt;chr&gt;      &lt;dbl&gt;
+1  2019 Bangladesh 0    
+2  2020 Bangladesh 0.125
+
+$Benin
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country  prop
+  &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;
+1  2019 Benin       1
+2  2020 Benin       1
+
+$Bhutan
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country  prop
+  &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;
+1  2019 Bhutan      1
+
+$Brazil
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country   prop
+  &lt;dbl&gt; &lt;chr&gt;    &lt;dbl&gt;
+1  2019 Brazil  0.0465
+2  2020 Brazil  0.185 
+
+$Bulgaria
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country   prop
+  &lt;dbl&gt; &lt;chr&gt;    &lt;dbl&gt;
+1  2019 Bulgaria 1    
+2  2020 Bulgaria 0.154
+
+$`Burkina Faso`
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country       prop
+  &lt;dbl&gt; &lt;chr&gt;        &lt;dbl&gt;
+1  2019 Burkina Faso 0.559
+2  2020 Burkina Faso 0.532
+
+$Cameroon
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country   prop
+  &lt;dbl&gt; &lt;chr&gt;    &lt;dbl&gt;
+1  2019 Cameroon 0.380
+
+$Canada
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country  prop
+  &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;
+1  2019 Canada  0    
+2  2020 Canada  0.150
+
+$China
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country   prop
+  &lt;dbl&gt; &lt;chr&gt;    &lt;dbl&gt;
+1  2019 China   0.342 
+2  2020 China   0.0540
+
+$Colombia
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country   prop
+  &lt;dbl&gt; &lt;chr&gt;    &lt;dbl&gt;
+1  2019 Colombia 0    
+2  2020 Colombia 0.571
+
+$`Cote D_ivoire`
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country        prop
+  &lt;dbl&gt; &lt;chr&gt;         &lt;dbl&gt;
+1  2019 Cote D_ivoire     0
+
+$Cyprus
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country  prop
+  &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;
+1  2019 Cyprus      1
+
+$ECUADOR
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country    prop
+  &lt;dbl&gt; &lt;chr&gt;     &lt;dbl&gt;
+1  2019 ECUADOR 0.00425
+
+$EMPTY
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country  prop
+  &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;
+1  2019 EMPTY   0.195
+
+$France
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country   prop
+  &lt;dbl&gt; &lt;chr&gt;    &lt;dbl&gt;
+1  2019 France  1     
+2  2020 France  0.0472
+
+$Germany
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country    prop
+  &lt;dbl&gt; &lt;chr&gt;     &lt;dbl&gt;
+1  2019 Germany 0.00356
+2  2020 Germany 0.0196 
+
+$Ghana
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country  prop
+  &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;
+1  2019 Ghana   1    
+2  2020 Ghana   0.942
+
+$`Hong Kong`
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country    prop
+  &lt;dbl&gt; &lt;chr&gt;     &lt;dbl&gt;
+1  2019 Hong Kong 0.593
+
+$India
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country   prop
+  &lt;dbl&gt; &lt;chr&gt;    &lt;dbl&gt;
+1  2019 India   0.116 
+2  2020 India   0.0527
+
+$Indonesia
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country    prop
+  &lt;dbl&gt; &lt;chr&gt;     &lt;dbl&gt;
+1  2019 Indonesia 0.267
+2  2020 Indonesia 0.277
+
+$Ireland
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country  prop
+  &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;
+1  2019 Ireland 1    
+2  2020 Ireland 0.312
+
+$Italy
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country  prop
+  &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;
+1  2019 Italy   0.125
+2  2020 Italy   0.864
+
+$Japan
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country   prop
+  &lt;dbl&gt; &lt;chr&gt;    &lt;dbl&gt;
+1  2019 Japan   0.0714
+2  2020 Japan   0.0113
+
+$Kenya
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country  prop
+  &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;
+1  2019 Kenya   0.937
+2  2020 Kenya   0.880
+
+$Latvia
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country   prop
+  &lt;dbl&gt; &lt;chr&gt;    &lt;dbl&gt;
+1  2019 Latvia  0.0412
+2  2020 Latvia  0.0852
+
+$Luxembourg
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country     prop
+  &lt;dbl&gt; &lt;chr&gt;      &lt;dbl&gt;
+1  2019 Luxembourg     0
+
+$Malaysia
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country   prop
+  &lt;dbl&gt; &lt;chr&gt;    &lt;dbl&gt;
+1  2019 Malaysia 0.283
+2  2020 Malaysia 0.406
+
+$Maldives
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country   prop
+  &lt;dbl&gt; &lt;chr&gt;    &lt;dbl&gt;
+1  2019 Maldives     1
+
+$Mexico
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country  prop
+  &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;
+1  2019 Mexico  0.274
+2  2020 Mexico  0.286
+
+$Montenegro
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country     prop
+  &lt;dbl&gt; &lt;chr&gt;      &lt;dbl&gt;
+1  2019 Montenegro 0.793
+2  2020 Montenegro 0.622
+
+$NIGERIA
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country  prop
+  &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;
+1  2019 NIGERIA 0.450
+
+$Netherlands
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country         prop
+  &lt;dbl&gt; &lt;chr&gt;          &lt;dbl&gt;
+1  2019 Netherlands 0.000592
+2  2020 Netherlands 0.0297  
+
+$Philippines
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country       prop
+  &lt;dbl&gt; &lt;chr&gt;        &lt;dbl&gt;
+1  2019 Philippines 0.133 
+2  2020 Philippines 0.0534
+
+$Portugal
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country     prop
+  &lt;dbl&gt; &lt;chr&gt;      &lt;dbl&gt;
+1  2019 Portugal 0.00199
+2  2020 Portugal 0.00857
+
+$Rwanda
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country  prop
+  &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;
+1  2019 Rwanda  0.271
+
+$Slovenia
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country    prop
+  &lt;dbl&gt; &lt;chr&gt;     &lt;dbl&gt;
+1  2019 Slovenia 0.0722
+2  2020 Slovenia 0.127 
+
+$`South Africa`
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country         prop
+  &lt;dbl&gt; &lt;chr&gt;          &lt;dbl&gt;
+1  2019 South Africa 0.00552
+2  2020 South Africa 0.898  
+
+$Spain
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country   prop
+  &lt;dbl&gt; &lt;chr&gt;    &lt;dbl&gt;
+1  2019 Spain   0.0316
+2  2020 Spain   0.134 
+
+$`Sri Lanka`
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country    prop
+  &lt;dbl&gt; &lt;chr&gt;     &lt;dbl&gt;
+1  2019 Sri Lanka 0.120
+2  2020 Sri Lanka 0.318
+
+$Switzerland
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country       prop
+  &lt;dbl&gt; &lt;chr&gt;        &lt;dbl&gt;
+1  2019 Switzerland 0.0136
+2  2020 Switzerland 0.0195
+
+$`Taiwan_ Republic of China (ROC)`
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country                          prop
+  &lt;dbl&gt; &lt;chr&gt;                           &lt;dbl&gt;
+1  2019 Taiwan_ Republic of China (ROC)     0
+
+$Tanzania
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country   prop
+  &lt;dbl&gt; &lt;chr&gt;    &lt;dbl&gt;
+1  2019 Tanzania 0.871
+2  2020 Tanzania 0.561
+
+$Thailand
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country   prop
+  &lt;dbl&gt; &lt;chr&gt;    &lt;dbl&gt;
+1  2019 Thailand 0    
+2  2020 Thailand 0.413
+
+$Tunisia
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country  prop
+  &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;
+1  2019 Tunisia 1    
+2  2020 Tunisia 0.257
+
+$Turkey
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country  prop
+  &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;
+1  2019 Turkey  0.326
+
+$Ukraine
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country  prop
+  &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;
+1  2019 Ukraine 0.140
+2  2020 Ukraine 0.233
+
+$`United Arab Emirates`
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country               prop
+  &lt;dbl&gt; &lt;chr&gt;                &lt;dbl&gt;
+1  2019 United Arab Emirates 0.917
+2  2020 United Arab Emirates 0    
+
+$`United Kingdom`
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country         prop
+  &lt;dbl&gt; &lt;chr&gt;          &lt;dbl&gt;
+1  2019 United Kingdom     0
+
+$`United States of America`
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country                    prop
+  &lt;dbl&gt; &lt;chr&gt;                     &lt;dbl&gt;
+1  2019 United States of America 0.0392
+2  2020 United States of America 0.222 
+
+$Vietnam
+# A tibble: 2 × 3
+# Groups:   year [2]
+   year country  prop
+  &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;
+1  2019 Vietnam 0.274
+2  2020 Vietnam 0.172
+
+$Armenia
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country  prop
+  &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;
+1  2020 Armenia     1
+
+$Chile
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country  prop
+  &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;
+1  2020 Chile   0.224
+
+$Denmark
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country   prop
+  &lt;dbl&gt; &lt;chr&gt;    &lt;dbl&gt;
+1  2020 Denmark 0.0100
+
+$Ecuador
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country  prop
+  &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;
+1  2020 Ecuador 0.645
+
+$`El Salvador`
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country      prop
+  &lt;dbl&gt; &lt;chr&gt;       &lt;dbl&gt;
+1  2020 El Salvador 0.201
+
+$Greece
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country  prop
+  &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;
+1  2020 Greece  0.103
+
+$Honduras
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country   prop
+  &lt;dbl&gt; &lt;chr&gt;    &lt;dbl&gt;
+1  2020 Honduras   0.5
+
+$Korea
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country   prop
+  &lt;dbl&gt; &lt;chr&gt;    &lt;dbl&gt;
+1  2020 Korea   0.0409
+
+$Kuwait
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country   prop
+  &lt;dbl&gt; &lt;chr&gt;    &lt;dbl&gt;
+1  2020 Kuwait  0.0567
+
+$Lithuania
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country     prop
+  &lt;dbl&gt; &lt;chr&gt;      &lt;dbl&gt;
+1  2020 Lithuania 0.0433
+
+$Nigeria
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country  prop
+  &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;
+1  2020 Nigeria 0.433
+
+$Peru
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country  prop
+  &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;
+1  2020 Peru    0.127
+
+$Romania
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country  prop
+  &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;
+1  2020 Romania 0.416
+
+$Serbia
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country  prop
+  &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;
+1  2020 Serbia  0.553
+
+$Singapore
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country    prop
+  &lt;dbl&gt; &lt;chr&gt;     &lt;dbl&gt;
+1  2020 Singapore 0.842
+
+$Togo
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country   prop
+  &lt;dbl&gt; &lt;chr&gt;    &lt;dbl&gt;
+1  2020 Togo    0.0633
+
+$`United Kingdom of Great Britain &amp; Northern Ireland`
+# A tibble: 1 × 3
+# Groups:   year [1]
+   year country                                             prop
+  &lt;dbl&gt; &lt;chr&gt;                                              &lt;dbl&gt;
+1  2020 United Kingdom of Great Britain &amp; Northern Ireland 0.104</code></pre>
+</div>
+</div>
+<p>Seems like a significant reduction in Polyester Plastics collected in Argentina.</p>
+</details></section>
+<section id="low-high-density-polyethylene-total-count-per-year" class="level2">
+<h2 class="anchored" data-anchor-id="low-high-density-polyethylene-total-count-per-year">Low &amp; High Density Polyethylene Total Count Per Year</h2>
+<p><em>No new columns</em></p>
+<p><em>Requires custom function</em></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>sum_pe <span class="ot">&lt;-</span> <span class="cf">function</span>(input_country){</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  plastics <span class="sc">|&gt;</span> </span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(year) <span class="sc">|&gt;</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(country <span class="sc">==</span> input_country) <span class="sc">|&gt;</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarize</span>(</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">ldpe_total =</span> <span class="fu">sum</span>(ldpe, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), </span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">hdpe_total =</span> <span class="fu">sum</span>(hdpe, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),                </span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">.groups =</span> <span class="st">"drop"</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="co">#Test Case</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="fu">sum_pe</span>(<span class="st">"Brazil"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0         70
+2  2020        572        114</code></pre>
+</div>
+</div>
+<p><em>Iteration</em></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>result <span class="ot">&lt;-</span> countries <span class="sc">|&gt;</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">map</span>(<span class="at">.f =</span> sum_pe) <span class="sc">|&gt;</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_names</span>(countries)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<details>
+<summary>
+Show table output
+</summary>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>$Argentina
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019        110        430
+2  2020        141        132
+
+$Australia
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0          0
+2  2020        222         33
+
+$Bangladesh
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0          0
+2  2020          2        376
+
+$Benin
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0          0
+2  2020          0          0
+
+$Bhutan
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0          0
+
+$Brazil
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0         70
+2  2020        572        114
+
+$Bulgaria
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0          0
+2  2020         34         11
+
+$`Burkina Faso`
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019       4178          0
+2  2020         20        267
+
+$Cameroon
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019       6850       1190
+
+$Canada
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0          0
+2  2020        611        117
+
+$China
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0          0
+2  2020          0          2
+
+$Colombia
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0          0
+2  2020        413        357
+
+$`Cote D_ivoire`
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0        106
+
+$Cyprus
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0          0
+
+$ECUADOR
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0          0
+
+$EMPTY
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019      12886       3070
+
+$France
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0          0
+2  2020         73         10
+
+$Germany
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0          0
+2  2020        210          2
+
+$Ghana
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0          0
+2  2020        291        220
+
+$`Hong Kong`
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019         14        614
+
+$India
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019       1322          4
+2  2020       6684        489
+
+$Indonesia
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019       5596        390
+2  2020       1461       1304
+
+$Ireland
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0          0
+2  2020          0          0
+
+$Italy
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0          0
+2  2020          1         10
+
+$Japan
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019         12          0
+2  2020          0          0
+
+$Kenya
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019        270        430
+2  2020         61        340
+
+$Latvia
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          4        160
+2  2020          9          6
+
+$Luxembourg
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0          0
+
+$Malaysia
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0         14
+2  2020         86        140
+
+$Maldives
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0          0
+
+$Mexico
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019         44         56
+2  2020        288        134
+
+$Montenegro
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0        106
+2  2020        225          0
+
+$NIGERIA
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019      23400       7456
+
+$Netherlands
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0          0
+2  2020         94          0
+
+$Philippines
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019      17342       2878
+2  2020       3939         82
+
+$Portugal
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          4          0
+2  2020       1184       2594
+
+$Rwanda
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0         18
+
+$Slovenia
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019        172          4
+2  2020        132         11
+
+$`South Africa`
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0          0
+2  2020          0         79
+
+$Spain
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          4         76
+2  2020        132        123
+
+$`Sri Lanka`
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019       2240        434
+2  2020          0          0
+
+$Switzerland
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0         36
+2  2020       1528        102
+
+$`Taiwan_ Republic of China (ROC)`
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0          0
+
+$Tanzania
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0          0
+2  2020          3        113
+
+$Thailand
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0        730
+2  2020          2        312
+
+$Tunisia
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0          0
+2  2020        615        167
+
+$Turkey
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0        232
+
+$Ukraine
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019        190         38
+2  2020        509        428
+
+$`United Arab Emirates`
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0          0
+2  2020          0          0
+
+$`United Kingdom`
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019          0          0
+
+$`United States of America`
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019        338         40
+2  2020        825        654
+
+$Vietnam
+# A tibble: 2 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2019       4202         58
+2  2020        198        212
+
+$Armenia
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2020          0          0
+
+$Chile
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2020        226        211
+
+$Denmark
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2020         22         68
+
+$Ecuador
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2020          0          0
+
+$`El Salvador`
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2020        180          2
+
+$Greece
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2020          6          0
+
+$Honduras
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2020          0          0
+
+$Korea
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2020        111          8
+
+$Kuwait
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2020         30         37
+
+$Lithuania
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2020          3        109
+
+$Nigeria
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2020      15470       7532
+
+$Peru
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2020         97         26
+
+$Romania
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2020          0          0
+
+$Serbia
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2020          0          0
+
+$Singapore
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2020          0         15
+
+$Togo
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2020          0          0
+
+$`United Kingdom of Great Britain &amp; Northern Ireland`
+# A tibble: 1 × 3
+   year ldpe_total hdpe_total
+  &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1  2020        752        153</code></pre>
+</div>
+</div>
+</details></section>
 </section>
 
 </main>

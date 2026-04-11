@@ -1,50 +1,151 @@
 ---
 title: "Environmental Plastic Waste Analysis"
+author: Shravani Subramanian
 format: html
 ---
 
+```{r}
+library(tidyverse)
+library(dplyr)
+```
+
 ## Context
 
-The Environmental Plastic Waste Data comes from the **"Break Free from Plastic"** movement and covers information on plastic use across the world, organized by country, type of plastic, source of plastic, and year (2019 or 2020). The data comes from brand audits and cleanups conducted by volunteers. Some limitations of this dataset are that the countries will not have an equal sampling effort and the data depends on volunteer participation. Additionally, the amount of collected waste does not necessarily tell us how much plastic there is in general. Aside from those, the data is useful to help identify major corporate contributors to plastic pollution in our environment. It can also help inform environmental policy workers and provide corporate accountability. 
+The Environmental Plastic Waste Data comes from the **"Break Free from Plastic"** movement and covers information on plastic use across the world, organized by country, type of plastic, source of plastic, and year (2019 or 2020). The data comes from brand audits and cleanups conducted by volunteers. Some limitations of this dataset are that the countries will not have an equal sampling effort and the data depends on volunteer participation. Additionally, the amount of collected waste does not necessarily tell us how much plastic there is in general. Aside from those, the data is useful to help identify major corporate contributors to plastic pollution in our environment. It can also help inform environmental policy workers and provide corporate accountability.
 
 ## Data Cleaning
 
-It seems as though initially the 2019 and 2020 datasets were imported separately from directories. Only the csv files were chosen from those respective directories. We then read the two CSV files with specified column types to prevent any confusion. The code then combines multiple files into a single file for each year (one for 2019 and one for 2020) through `map_dfr`. Next, the code cleans column names for both files using the `janitor::clean_names()` command, and makes the names consistent across years. A year column is also added to the datasets. 
+It seems as though initially the 2019 and 2020 datasets were imported separately from directories. Only the csv files were chosen from those respective directories. We then read the two CSV files with specified column types to prevent any confusion. The code then combines multiple files into a single file for each year (one for 2019 and one for 2020) through `map_dfr`. Next, the code cleans column names for both files using the `janitor::clean_names()` command, and makes the names consistent across years. A year column is also added to the datasets.
 
-Individual Changes: 
+Individual Changes:
 
-2020: 
+2020:
 
-- The `Grand_Total` variable is converted from character to numeric.
+-   The `Grand_Total` variable is converted from character to numeric.
 
-2019: 
+2019:
 
-- The country names are extracted from file names & stored in a `country` column. 
+-   The country names are extracted from file names & stored in a `country` column.
 
-- Combines duplicate columns `pp_2` and `pp` as well as `ps` & `ps_2`. 
+-   Combines duplicate columns `pp_2` and `pp` as well as `ps` & `ps_2`.
 
-- Handles missing values using `is.na` and an `ifelse()` statement. 
+-   Handles missing values using `is.na` and an `ifelse()` statement.
 
-- Drops `ps_2` & `pp_2`
+-   Drops `ps_2` & `pp_2`
 
-Lastly, the 2019 and 2020 datasets are merged using `bind_rows()`and exported to a csv file. 
+Lastly, the 2019 and 2020 datasets are merged using `bind_rows()`and exported to a csv file.
 
+## Research Questions
 
-## Research Questions 
+Using Current Data:
 
-Using Current Data: 
+1)  Have certain plastic types (e.g. Polystyrene or High density polyethylene) become more or less common over time?
 
-1) Have certain plastic types (e.g. Polystyrene or High density polyethylene) become more or less common over time?
+2)  How does the composition of plastic waste differ between countries?
 
-2) How does the composition of plastic waste differ between countries?
+Using Supplemental Data:
 
-Using Supplemental Data: 
+1)  Is there a relationship between a country’s GDP and the amount of branded plastic pollution collected?
 
-1) Is there a relationship between a country’s GDP and the amount of branded plastic pollution collected?
-
-2) Do countries with stricter plastic regulations show lower counts of certain plastic types?
+2)  Do countries with stricter plastic regulations show lower counts of certain plastic types?
 
 ## Visualizations
 
-![](YearsVsTotalP.png)
-![](RQ CountryGDP.png)
+![](YearsVsTotalP.png) 
+
+![](RQ%20CountryGDP.png)
+
+# Checkpoint 2
+
+## Reading in the Data
+
+```{r}
+plastics <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2021/2021-01-26/plastics.csv')
+```
+
+## Proportion of Polyester Plastic Between 2019 & 2020 By Country
+
+*New Column: proportion of Polyester Plastics for each year*
+
+*Uses iteration, no custom function*
+```{r}
+
+pet_props <- plastics |> 
+  group_by(year, country) |>
+  summarize(
+   prop = sum(pet, na.rm = TRUE)/sum(grand_total, na.rm = TRUE)
+   )
+pet_props
+
+```
+
+*Custom Function*
+
+```{r}
+#| echo: true
+#| output: false
+Yearly_PET_Prop <- function(input_country){
+  pet_props |>
+    filter(country == input_country) 
+}
+
+countries <- plastics |> 
+  distinct(country) |>
+  pull(country)
+  
+result <- countries |>
+  map(.f = Yearly_PET_Prop) |>
+  set_names(countries)
+
+```
+<details> <summary>Show table output</summary>
+
+```{r}
+#| echo: false
+
+result
+```
+
+Seems like a significant reduction in Polyester Plastics collected in Argentina. 
+
+## Low & High Density Polyethylene Total Count Per Year
+
+*No new columns*
+
+*Requires custom function*
+
+```{r}
+sum_pe <- function(input_country){
+  plastics |> 
+    group_by(year) |>
+    filter(country == input_country) |>
+    summarize(
+      ldpe_total = sum(ldpe, na.rm = TRUE), 
+      hdpe_total = sum(hdpe, na.rm = TRUE),                
+      .groups = "drop"
+      )
+}
+
+#Test Case
+sum_pe("Brazil")
+```
+
+*Iteration*
+```{r}
+#| echo: true
+#| output: false
+ 
+result <- countries |>
+  map(.f = sum_pe) |>
+  set_names(countries)
+
+```
+<details> <summary>Show table output</summary>
+
+```{r}
+#| echo: false
+
+result
+```
+
+
