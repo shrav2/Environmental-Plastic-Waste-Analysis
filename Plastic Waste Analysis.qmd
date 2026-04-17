@@ -148,4 +148,6 @@ result <- countries |>
 result
 ```
 
+#Checkpoint 3
+
 
