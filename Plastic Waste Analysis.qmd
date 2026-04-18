@@ -153,13 +153,13 @@ result
 
 ```{r}
 #| label: install-load-packages
-
 library(httr)
 library(tidyjson)
 library(jsonlite)
 library(tidyverse)
 library(glue)
 library(purrr)
+library(countrycode)
 ```
 
 ## Temperature Data Set (Additional Country-Level Data)
@@ -179,48 +179,48 @@ head(temp, 10)
 
 The temperature data set includes data on the mean annual temperatures for all countries worldwide for the years 1901-2022, but we are particularly interested in the years 2019 and 2020. The 3-letter ISO code for each country is also included. We chose this data set because we wanted to explore how climate affects plastic degradation and consumption across different countries around the world.
 
+
 ## GDP Data Set (Additional Country-Level Data)
 
 ```{r}
 #| label: api-key
 
-my_key <- "hda5BVfOWGIqGMzzozIZlPgYWneHQSE8iOkPLL5H"
+my_key <- "jeQXhjaZCd6IqE2oCz6WDemzfY37kMfnIUN2Obul"
 ```
 
 ```{r}
 #| label: gdp-data-api
 
 get_gdp <- function(country, key = my_key) {
-safe_parse <- safely(
-                     function(country, key) {
-  
-                       # Looked on Help Tab for GET()
-                       response <- GET(
-                                       url = "https://api.api-ninjas.com/v1/gdp", 
-                                       query = list(country= country), 
-                                       add_headers("X-Api-Key" = key)
-                                       )
-  
-                       # We were getting an error, so we looked on the internet for this line of code and the parameters
-                       # Source:ChatGPT
-                       data <- content(response, as = "text", encoding = "UTF-8")
+  safe_parse <- safely(
+    function(country, key) {
 
-                       fromJSON(data)
+      response <- GET(
+        url = "https://api.api-ninjas.com/v1/gdp",
+        query = list(country = country),
+        add_headers("X-Api-Key" = key)
+      )
 
-                       }
-                     )
+      data <- content(response, as = "text", encoding = "UTF-8")
+      fromJSON(data)
+    }
+  )
 
   out <- safe_parse(country, key)
 
+  # if there was an error, return empty data frame
   if (!is.null(out$error)) {
-    return(NA)
+    return(data.frame())
   }
+
+  # if result is empty, return empty data frame
   if (length(out$result) == 0) {
-    return(NA)
+    return(data.frame())
   }
 
-  out$result
-
+  # force result into data frame
+  as.data.frame(out$result) |> 
+    filter(year %in% c(2019, 2020))
 }
 
 # Test Case
@@ -228,21 +228,54 @@ safe_parse <- safely(
 get_gdp("Canada")
 ```
 
-The GDP data set includes historical, current, and predicted data on GDP for countries around the world the years for 1980-2029. We are particularly interested in the years 2019 and 2020. The 3-letter ISO code for each country is also included. There are 5 variables measuring GDP in different ways. For example, the variable `gdp_per_capita_nominal` measures GDP by dividing the country's total value of finished goods and services by its total population. `gdp_nominal` is the nominal GDP in billions of US dollars and `gdp_growth` expresses the GDP growth rate as a percentage. 
+```{r}
+#| label: combine-lists-into-df
+gdp <- map_dfr(unique(temp$Code), get_gdp)
+head(gdp, 10)
+```
+
+The original GDP data set includes historical, current, and predicted data on GDP for countries around the world for the years for 1980-2029. We are particularly interested in the years 2019 and 2020. The 3-letter ISO code for each country is also included. There are 5 variables measuring GDP in different ways. For example, the variable `gdp_per_capita_nominal` measures GDP by dividing the country's total value of finished goods and services by its total population. `gdp_nominal` is the nominal GDP in billions of US dollars and `gdp_growth` expresses the GDP growth rate as a percentage. 
 
 
 ## "Meta" Dataset: Combining Temperature, GDP, and Plastic Waste Data Sets
 
 ```{r}
-#| label: combine-temp-plastic-data
+#| label: combine-temp-gdp-data
+# Keep gdp_per_capita_nominal variable
+gdp_per_capita <- gdp |>
+  select(country, year, gdp_per_capita_nominal)
 
-
+# Remove X5.yr.smooth variable from temperature data, join with gdp data set
+combined <- temp |>
+  select(-X5.yr.smooth) |>
+  left_join(gdp_per_capita, by = c("Code" = "country", "Year" = "year"))
 ```
 
 ```{r}
-#| label: combine-temp-plastic-gdp-data
+#| label: clean-plastics
 
+# Sum up plastic and grand total plastic counts for each country, for each year
+plastics_sum <- plastics |>
+  group_by(country, year) |>
+  summarize(
+    across(empty:grand_total, sum, na.rm = TRUE),
+    num_events = first(num_events),
+    volunteers = first(volunteers),
+    .groups = "drop"
+  )
 ```
 
+```{r}
+#| label: combine-plastics-temp-gdp
+plastics_sum <- plastics_sum |>
+  filter(!(country == "EMPTY")) |>
+  mutate(Code = countrycode(
+    sourcevar = country, 
+    origin = "country.name", 
+    destination = "iso3c"))
+```                       
 
+```{r}
+#| label: data-summaries-viz
+```
 

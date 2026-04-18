@@ -1314,154 +1314,69 @@ Attaching package: 'jsonlite'</code></pre>
 <section id="gdp-data-set-additional-country-level-data" class="level2">
 <h2 class="anchored" data-anchor-id="gdp-data-set-additional-country-level-data">GDP Data Set (Additional Country-Level Data)</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>my_key <span class="ot">&lt;-</span> <span class="st">"hda5BVfOWGIqGMzzozIZlPgYWneHQSE8iOkPLL5H"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>my_key <span class="ot">&lt;-</span> <span class="st">"jeQXhjaZCd6IqE2oCz6WDemzfY37kMfnIUN2Obul"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>get_gdp <span class="ot">&lt;-</span> <span class="cf">function</span>(country, <span class="at">key =</span> my_key) {</span>
-<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>safe_parse <span class="ot">&lt;-</span> <span class="fu">safely</span>(</span>
-<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>                     <span class="cf">function</span>(country, key) {</span>
-<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>                       <span class="co"># Looked on Help Tab for GET()</span></span>
-<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>                       response <span class="ot">&lt;-</span> <span class="fu">GET</span>(</span>
-<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">url =</span> <span class="st">"https://api.api-ninjas.com/v1/gdp"</span>, </span>
-<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">query =</span> <span class="fu">list</span>(<span class="at">country=</span> country), </span>
-<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>                                       <span class="fu">add_headers</span>(<span class="st">"X-Api-Key"</span> <span class="ot">=</span> key)</span>
-<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>                                       )</span>
-<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>                       <span class="co"># We were getting an error, so we looked on the internet for this line of code and the parameters</span></span>
-<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>                       <span class="co"># Source:ChatGPT</span></span>
-<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>                       data <span class="ot">&lt;-</span> <span class="fu">content</span>(response, <span class="at">as =</span> <span class="st">"text"</span>, <span class="at">encoding =</span> <span class="st">"UTF-8"</span>)</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  safe_parse <span class="ot">&lt;-</span> <span class="fu">safely</span>(</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">function</span>(country, key) {</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>      response <span class="ot">&lt;-</span> <span class="fu">GET</span>(</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>        <span class="at">url =</span> <span class="st">"https://api.api-ninjas.com/v1/gdp"</span>,</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">query =</span> <span class="fu">list</span>(<span class="at">country =</span> country),</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>        <span class="fu">add_headers</span>(<span class="st">"X-Api-Key"</span> <span class="ot">=</span> key)</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>      data <span class="ot">&lt;-</span> <span class="fu">content</span>(response, <span class="at">as =</span> <span class="st">"text"</span>, <span class="at">encoding =</span> <span class="st">"UTF-8"</span>)</span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>      <span class="fu">fromJSON</span>(data)</span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>  )</span>
 <span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a>                       <span class="fu">fromJSON</span>(data)</span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">safe_parse</span>(country, key)</span>
 <span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a>                       }</span>
-<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a>                     )</span>
-<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-21"><a href="#cb27-21" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">safe_parse</span>(country, key)</span>
+<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a>  <span class="co"># if there was an error, return empty data frame</span></span>
+<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(out<span class="sc">$</span>error)) {</span>
+<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="fu">data.frame</span>())</span>
+<span id="cb27-21"><a href="#cb27-21" aria-hidden="true" tabindex="-1"></a>  }</span>
 <span id="cb27-22"><a href="#cb27-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-23"><a href="#cb27-23" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(out<span class="sc">$</span>error)) {</span>
-<span id="cb27-24"><a href="#cb27-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="cn">NA</span>)</span>
-<span id="cb27-25"><a href="#cb27-25" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb27-26"><a href="#cb27-26" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">length</span>(out<span class="sc">$</span>result) <span class="sc">==</span> <span class="dv">0</span>) {</span>
-<span id="cb27-27"><a href="#cb27-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="cn">NA</span>)</span>
-<span id="cb27-28"><a href="#cb27-28" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb27-29"><a href="#cb27-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-30"><a href="#cb27-30" aria-hidden="true" tabindex="-1"></a>  out<span class="sc">$</span>result</span>
+<span id="cb27-23"><a href="#cb27-23" aria-hidden="true" tabindex="-1"></a>  <span class="co"># if result is empty, return empty data frame</span></span>
+<span id="cb27-24"><a href="#cb27-24" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">length</span>(out<span class="sc">$</span>result) <span class="sc">==</span> <span class="dv">0</span>) {</span>
+<span id="cb27-25"><a href="#cb27-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="fu">data.frame</span>())</span>
+<span id="cb27-26"><a href="#cb27-26" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb27-27"><a href="#cb27-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-28"><a href="#cb27-28" aria-hidden="true" tabindex="-1"></a>  <span class="co"># force result into data frame</span></span>
+<span id="cb27-29"><a href="#cb27-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.data.frame</span>(out<span class="sc">$</span>result) <span class="sc">|&gt;</span> <span class="fu">filter</span>(year <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">2019</span>, <span class="dv">2020</span>))</span>
+<span id="cb27-30"><a href="#cb27-30" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb27-31"><a href="#cb27-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-32"><a href="#cb27-32" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb27-33"><a href="#cb27-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-34"><a href="#cb27-34" aria-hidden="true" tabindex="-1"></a><span class="co"># Test Case</span></span>
-<span id="cb27-35"><a href="#cb27-35" aria-hidden="true" tabindex="-1"></a><span class="co"># can call function with 2-letter ISO code (get_gdp("CA")) or with full country name:</span></span>
-<span id="cb27-36"><a href="#cb27-36" aria-hidden="true" tabindex="-1"></a><span class="fu">get_gdp</span>(<span class="st">"Canada"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb27-32"><a href="#cb27-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Test Case</span></span>
+<span id="cb27-33"><a href="#cb27-33" aria-hidden="true" tabindex="-1"></a><span class="co"># can call function with 2-letter ISO code (get_gdp("CA")) or with full country name:</span></span>
+<span id="cb27-34"><a href="#cb27-34" aria-hidden="true" tabindex="-1"></a><span class="fu">get_gdp</span>(<span class="st">"Canada"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>   country year gdp_growth gdp_nominal gdp_per_capita_nominal  gdp_ppp
-1      CAN 1980        2.2     276.064               11281.42  290.290
-2      CAN 1981        3.5     307.246               12396.67  328.886
-3      CAN 1982       -3.2     314.639               12543.94  338.153
-4      CAN 1983        2.6     341.863               13493.20  360.398
-5      CAN 1984        5.9     356.728               13947.36  395.431
-6      CAN 1985        4.7     366.184               14185.92  427.262
-7      CAN 1986        2.1     379.015               14539.75  445.111
-8      CAN 1987        4.1     433.140               16408.14  474.716
-9      CAN 1988        4.4     509.380               19041.18  513.134
-10     CAN 1989        2.3     567.225               20842.46  545.720
-11     CAN 1990        0.2     596.089               21572.14  567.292
-12     CAN 1991       -2.1     612.514               21885.57  574.217
-13     CAN 1992        0.9     594.376               20984.78  592.533
-14     CAN 1993        2.7     579.059               20210.45  622.697
-15     CAN 1994        4.5     579.913               20024.58  664.576
-16     CAN 1995        2.7     605.941               20706.72  696.709
-17     CAN 1996        1.7     630.598               21325.69  721.447
-18     CAN 1997        4.3     655.010               21930.49  765.299
-19     CAN 1998        3.9     634.004               21046.56  804.028
-20     CAN 1999        5.1     678.417               22340.55  857.326
-21     CAN 2000        5.1     744.631               24296.72  921.798
-22     CAN 2001        1.9     738.968               23859.77  960.227
-23     CAN 2002        3.0     760.149               24279.80 1004.396
-24     CAN 2003        1.8     895.599               28340.08 1042.727
-25     CAN 2004        3.1    1026.473               32178.50 1103.876
-26     CAN 2005        3.2    1173.505               36440.97 1175.043
-27     CAN 2006        2.6    1319.356               40559.02 1243.233
-28     CAN 2007        2.0    1468.896               44717.07 1303.091
-29     CAN 2008        1.0    1552.864               46773.74 1341.414
-30     CAN 2009       -2.9    1376.509               40989.28 1310.343
-31     CAN 2010        3.1    1617.345               47625.74 1367.261
-32     CAN 2011        3.1    1793.327               52285.82 1439.250
-33     CAN 2012        1.8    1828.362               52745.06 1491.786
-34     CAN 2013        2.3    1846.595               52711.32 1552.463
-35     CAN 2014        2.9    1805.751               51025.43 1624.889
-36     CAN 2015        0.6    1556.508               43628.43 1650.628
-37     CAN 2016        1.0    1527.996               42382.50 1683.619
-38     CAN 2017        3.0    1649.266               45192.37 1765.763
-39     CAN 2018        2.7    1725.300               46617.97 1852.988
-40     CAN 2019        1.9    1743.725               46430.97 1899.695
-41     CAN 2020       -5.0    1655.685               43573.19 1847.839
-42     CAN 2021        5.3    2007.472               52520.51 2133.084
-43     CAN 2022        3.8    2161.483               55612.90 2372.451
-44     CAN 2023        1.2    2142.471               53607.40 2488.523
-45     CAN 2024        1.3    2214.796               53834.48 2582.228
-46     CAN 2025        2.4    2330.308               55889.67 2692.053
-47     CAN 2026        2.0    2445.950               58264.20 2796.135
-48     CAN 2027        1.8    2559.321               60561.20 2899.231
-49     CAN 2028        1.8    2675.974               62693.52 3004.767
-50     CAN 2029        1.6    2793.495               64674.36 3110.156
-   gdp_per_capita_ppp gdp_ppp_share
-1            11862.75         2.192
-2            13269.81         2.224
-3            13481.38         2.142
-4            14224.77         2.143
-5            15460.59         2.172
-6            16552.09         2.196
-7            17075.35         2.172
-8            17983.11         2.176
-9            19181.53         2.176
-10           20052.26         2.149
-11           20529.99         2.074
-12           20517.19         1.986
-13           20919.70         1.799
-14           21733.52         1.813
-15           22948.03         1.842
-16           23808.51         1.825
-17           24398.05         1.788
-18           25623.09         1.792
-19           26690.74         1.814
-20           28232.10         1.843
-21           30077.52         1.844
-22           31003.77         1.834
-23           32081.28         1.839
-24           32995.76         1.806
-25           34604.97         1.771
-26           36488.72         1.748
-27           38218.88         1.706
-28           39669.53         1.655
-29           40404.68         1.627
-30           39019.00         1.590
-31           40261.54         1.559
-32           41962.43         1.550
-33           43035.42         1.529
-34           44315.28         1.515
-35           45914.79         1.506
-36           46266.59         1.468
-37           46699.04         1.437
-38           48384.58         1.427
-39           50068.12         1.408
-40           50584.06         1.362
-41           48630.15         1.328
-42           55806.85         1.372
-43           61040.88         1.377
-44           62266.07         1.351
-45           62765.57         1.327
-46           64565.68         1.317
-47           66605.85         1.300
-48           68604.48         1.284
-49           70396.59         1.268
-50           72005.61         1.250</code></pre>
+<pre><code>  country year gdp_growth gdp_nominal gdp_per_capita_nominal  gdp_ppp
+1     CAN 2019        1.9    1743.725               46430.97 1899.695
+2     CAN 2020       -5.0    1655.685               43573.19 1847.839
+  gdp_per_capita_ppp gdp_ppp_share
+1           50584.06         1.362
+2           48630.15         1.328</code></pre>
 </div>
 </div>
-<p>The GDP data set includes historical, current, and predicted data on GDP for countries around the world the years for 1980-2029. We are particularly interested in the years 2019 and 2020. The 3-letter ISO code for each country is also included. There are 5 variables measuring GDP in different ways. For example, the variable <code>gdp_per_capita_nominal</code> measures GDP by dividing the country’s total value of finished goods and services by its total population. <code>gdp_nominal</code> is the nominal GDP in billions of US dollars and <code>gdp_growth</code> expresses the GDP growth rate as a percentage.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>gdp <span class="ot">&lt;-</span> <span class="fu">map_dfr</span>(<span class="fu">unique</span>(temp<span class="sc">$</span>Code), get_gdp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The original GDP data set includes historical, current, and predicted data on GDP for countries around the world for the years for 1980-2029. We are particularly interested in the years 2019 and 2020. The 3-letter ISO code for each country is also included. There are 5 variables measuring GDP in different ways. For example, the variable <code>gdp_per_capita_nominal</code> measures GDP by dividing the country’s total value of finished goods and services by its total population. <code>gdp_nominal</code> is the nominal GDP in billions of US dollars and <code>gdp_growth</code> expresses the GDP growth rate as a percentage.</p>
 </section>
 <section id="meta-dataset-combining-temperature-gdp-and-plastic-waste-data-sets" class="level2">
 <h2 class="anchored" data-anchor-id="meta-dataset-combining-temperature-gdp-and-plastic-waste-data-sets">“Meta” Dataset: Combining Temperature, GDP, and Plastic Waste Data Sets</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Keep gdp_per_capita_nominal variable</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>gdp_per_capita <span class="ot">&lt;-</span> gdp <span class="sc">|&gt;</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(country, year, gdp_per_capita_nominal)</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove X5.yr.smooth variable from temperature data, join with gdp data set</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>combined <span class="ot">&lt;-</span> temp <span class="sc">|&gt;</span></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>X5.yr.smooth) <span class="sc">|&gt;</span></span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(gdp_per_capita, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"Code"</span> <span class="ot">=</span> <span class="st">"country"</span>, <span class="st">"Year"</span> <span class="ot">=</span> <span class="st">"year"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 </section>
 </section>
 
