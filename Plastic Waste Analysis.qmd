@@ -148,6 +148,101 @@ result <- countries |>
 result
 ```
 
+
 #Checkpoint 3
+
+```{r}
+#| label: install-load-packages
+
+library(httr)
+library(tidyjson)
+library(jsonlite)
+library(tidyverse)
+library(glue)
+library(purrr)
+```
+
+## Temperature Data Set (Additional Country-Level Data)
+
+```{r}
+#| label: read-in-temp-data
+
+# Read in Temperature data set
+temp <- read.csv("combined_temperature.csv")
+
+temp <- temp |>
+  filter(Year %in% (c(2019, 2020)),)
+
+# Show first 10 rows of temp data set
+head(temp, 10)
+```
+
+The temperature data set includes data on the mean annual temperatures for all countries worldwide for the years 1901-2022, but we are particularly interested in the years 2019 and 2020. The 3-letter ISO code for each country is also included. We chose this data set because we wanted to explore how climate affects plastic degradation and consumption across different countries around the world.
+
+## GDP Data Set (Additional Country-Level Data)
+
+```{r}
+#| label: api-key
+
+my_key <- "hda5BVfOWGIqGMzzozIZlPgYWneHQSE8iOkPLL5H"
+```
+
+```{r}
+#| label: gdp-data-api
+
+get_gdp <- function(country, key = my_key) {
+safe_parse <- safely(
+                     function(country, key) {
+  
+                       # Looked on Help Tab for GET()
+                       response <- GET(
+                                       url = "https://api.api-ninjas.com/v1/gdp", 
+                                       query = list(country= country), 
+                                       add_headers("X-Api-Key" = key)
+                                       )
+  
+                       # We were getting an error, so we looked on the internet for this line of code and the parameters
+                       # Source:ChatGPT
+                       data <- content(response, as = "text", encoding = "UTF-8")
+
+                       fromJSON(data)
+
+                       }
+                     )
+
+  out <- safe_parse(country, key)
+
+  if (!is.null(out$error)) {
+    return(NA)
+  }
+  if (length(out$result) == 0) {
+    return(NA)
+  }
+
+  out$result
+
+}
+
+# Test Case
+# can call function with 2-letter ISO code (get_gdp("CA")) or with full country name:
+get_gdp("Canada")
+```
+
+The GDP data set includes historical, current, and predicted data on GDP for countries around the world the years for 1980-2029. We are particularly interested in the years 2019 and 2020. The 3-letter ISO code for each country is also included. There are 5 variables measuring GDP in different ways. For example, the variable `gdp_per_capita_nominal` measures GDP by dividing the country's total value of finished goods and services by its total population. `gdp_nominal` is the nominal GDP in billions of US dollars and `gdp_growth` expresses the GDP growth rate as a percentage. 
+
+
+## "Meta" Dataset: Combining Temperature, GDP, and Plastic Waste Data Sets
+
+```{r}
+#| label: combine-temp-plastic-data
+
+
+```
+
+```{r}
+#| label: combine-temp-plastic-gdp-data
+
+```
+
 
 
