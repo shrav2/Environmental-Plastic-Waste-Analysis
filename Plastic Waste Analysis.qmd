@@ -2,11 +2,20 @@
 title: "Environmental Plastic Waste Analysis"
 author: Shravani Subramanian
 format: html
+embed-resources: true
 ---
 
-```{r}
+```{r} 
+#| label: install-load-packages
+#| message: false
 library(tidyverse)
 library(dplyr)
+library(httr)
+library(tidyjson)
+library(jsonlite)
+library(glue)
+library(purrr)
+library(countrycode)
 ```
 
 ## Context
@@ -41,137 +50,26 @@ Using Current Data:
 
 1)  Have certain plastic types (e.g. Polystyrene or High density polyethylene) become more or less common over time?
 
-2)  How does the composition of plastic waste differ between countries?
 
 Using Supplemental Data:
 
-1)  Is there a relationship between a country’s GDP and the amount of branded plastic pollution collected?
+1) How does annual mean temperature affect total plastic count? 
 
-2)  Do countries with stricter plastic regulations show lower counts of certain plastic types?
-
-## Visualizations
-
-![](YearsVsTotalP.png) 
-
-![](RQ%20CountryGDP.png)
-
-# Checkpoint 2
-
-## Reading in the Data
-
-```{r}
-plastics <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2021/2021-01-26/plastics.csv')
-```
-
-## Proportion of Polyester Plastic Between 2019 & 2020 By Country
-
-*New Column: proportion of Polyester Plastics for each year*
-
-*Uses iteration, no custom function*
-```{r}
-
-pet_props <- plastics |> 
-  group_by(year, country) |>
-  summarize(
-   prop = sum(pet, na.rm = TRUE)/sum(grand_total, na.rm = TRUE)
-   )
-pet_props
-
-```
-
-*Custom Function*
-
-```{r}
-#| echo: true
-#| output: false
-Yearly_PET_Prop <- function(input_country){
-  pet_props |>
-    filter(country == input_country) 
-}
-
-countries <- plastics |> 
-  distinct(country) |>
-  pull(country)
-  
-result <- countries |>
-  map(.f = Yearly_PET_Prop) |>
-  set_names(countries)
-
-```
-<details> <summary>Show table output</summary>
-
-```{r}
-#| echo: false
-
-result
-```
-
-Seems like a significant reduction in Polyester Plastics collected in Argentina. 
-
-## Low & High Density Polyethylene Total Count Per Year
-
-*No new columns*
-
-*Requires custom function*
-
-```{r}
-sum_pe <- function(input_country){
-  plastics |> 
-    group_by(year) |>
-    filter(country == input_country) |>
-    summarize(
-      ldpe_total = sum(ldpe, na.rm = TRUE), 
-      hdpe_total = sum(hdpe, na.rm = TRUE),                
-      .groups = "drop"
-      )
-}
-
-#Test Case
-sum_pe("Brazil")
-```
-
-*Iteration*
-```{r}
-#| echo: true
-#| output: false
- 
-result <- countries |>
-  map(.f = sum_pe) |>
-  set_names(countries)
-
-```
-<details> <summary>Show table output</summary>
-
-```{r}
-#| echo: false
-
-result
-```
+2) Do countries with higher GDPs have more plastic counting events, and thus a higher total plastic count?
 
 
-#Checkpoint 3
-
-```{r}
-#| label: install-load-packages
-library(httr)
-library(tidyjson)
-library(jsonlite)
-library(tidyverse)
-library(glue)
-library(purrr)
-library(countrycode)
-```
+# Checkpoint 3
 
 ## Temperature Data Set (Additional Country-Level Data)
 
 ```{r}
 #| label: read-in-temp-data
-
 # Read in Temperature data set
 temp <- read.csv("combined_temperature.csv")
 
 temp <- temp |>
-  filter(Year %in% (c(2019, 2020)),)
+  filter(Year %in% (c(2019, 2020)),) |>
+  rename(AnnualMeanTemp = Annual.Mean)
 
 # Show first 10 rows of temp data set
 head(temp, 10)
@@ -183,14 +81,8 @@ The temperature data set includes data on the mean annual temperatures for all c
 ## GDP Data Set (Additional Country-Level Data)
 
 ```{r}
-#| label: api-key
-
-my_key <- "jeQXhjaZCd6IqE2oCz6WDemzfY37kMfnIUN2Obul"
-```
-
-```{r}
 #| label: gdp-data-api
-
+#| eval: false
 get_gdp <- function(country, key = my_key) {
   safe_parse <- safely(
     function(country, key) {
@@ -219,8 +111,7 @@ get_gdp <- function(country, key = my_key) {
   }
 
   # force result into data frame
-  as.data.frame(out$result) |> 
-    filter(year %in% c(2019, 2020))
+  as.data.frame(out$result) |> filter(year %in% c(2019, 2020))
 }
 
 # Test Case
@@ -230,14 +121,28 @@ get_gdp("Canada")
 
 ```{r}
 #| label: combine-lists-into-df
+#| eval: false
 gdp <- map_dfr(unique(temp$Code), get_gdp)
 head(gdp, 10)
 ```
 
+```{r}
+#| label: write-csv-gdp
+#| eval: false
+write_csv(x = gdp, file = "stat431-gdp")
+```
+
 The original GDP data set includes historical, current, and predicted data on GDP for countries around the world for the years for 1980-2029. We are particularly interested in the years 2019 and 2020. The 3-letter ISO code for each country is also included. There are 5 variables measuring GDP in different ways. For example, the variable `gdp_per_capita_nominal` measures GDP by dividing the country's total value of finished goods and services by its total population. `gdp_nominal` is the nominal GDP in billions of US dollars and `gdp_growth` expresses the GDP growth rate as a percentage. 
+
+```{r}
+#| label: read-csv-gdp
+gdp <- read_csv("stat431-gdp")
+gdp
+```
 
 
 ## "Meta" Dataset: Combining Temperature, GDP, and Plastic Waste Data Sets
+
 
 ```{r}
 #| label: combine-temp-gdp-data
@@ -246,36 +151,77 @@ gdp_per_capita <- gdp |>
   select(country, year, gdp_per_capita_nominal)
 
 # Remove X5.yr.smooth variable from temperature data, join with gdp data set
-combined <- temp |>
+combined_temp_gdp <- temp |>
   select(-X5.yr.smooth) |>
   left_join(gdp_per_capita, by = c("Code" = "country", "Year" = "year"))
 ```
 
 ```{r}
 #| label: clean-plastics
+plastics <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2021/2021-01-26/plastics.csv')
 
 # Sum up plastic and grand total plastic counts for each country, for each year
 plastics_sum <- plastics |>
   group_by(country, year) |>
   summarize(
-    across(empty:grand_total, sum, na.rm = TRUE),
+    across(empty:grand_total,\(x) sum(x, na.rm = TRUE)),
     num_events = first(num_events),
     volunteers = first(volunteers),
     .groups = "drop"
   )
+head(plastics_sum, 10)
 ```
 
 ```{r}
-#| label: combine-plastics-temp-gdp
+#| label: country-code-plastics
+# Create country code variable for plastics data
 plastics_sum <- plastics_sum |>
   filter(!(country == "EMPTY")) |>
-  mutate(Code = countrycode(
-    sourcevar = country, 
-    origin = "country.name", 
-    destination = "iso3c"))
-```                       
+  mutate(Code = countrycode(sourcevar = country, origin = "country.name", destination = "iso3c")) |>
+  rename(Year = year, Country = country)
+
+head(plastics_sum, 10)
+```
 
 ```{r}
-#| label: data-summaries-viz
+# Combine plastics data with temp/GDP
+meta_data <- inner_join(plastics_sum, combined_temp_gdp, by = c("Country", "Code", "Year"))
+head(meta_data, 10)
 ```
+
+### How does annual mean temperature affect total plastic count? 
+
+```{r}
+#| label: data-summaries-viz-1
+# Grand Total Plastic Count by Annual Mean Temperature
+ggplot(data = meta_data, aes(x = AnnualMeanTemp, y = grand_total, color = factor(Year))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) + 
+  labs(x = "Annual Mean Temperature (Celsius)",
+       y = "Grand Total Plastic Count",
+       title = "Grand Total Plastic Count by Annual Mean Temperature",
+       color = "Year") + 
+  scale_color_manual(values = c("2019" = "steelblue", "2020" = "lightcoral")) + 
+  theme_classic()
+```
+
+### Do countries with higher GDPs have more plastic counting events, and thus a higher total plastic count?
+
+```{r}
+#| label: data-summaries-viz-2
+# Grand Total Plastic Count by Number of Plastic Counting Events
+ggplot(data = meta_data, aes(x = num_events, y = grand_total, color = factor(Year))) +
+  geom_point(aes(size = gdp_per_capita_nominal)) +
+  labs(x = "Number of Plastic Counting Events",
+       y = "Grand Total Plastic Count",
+       title = "Grand Total Plastic Count by Number of Plastic Counting Events",
+       color = "Year", 
+       size = "Nominal GDP per Capital") + 
+  scale_color_manual(values = c("2019" = "steelblue", "2020" = "lightcoral")) + 
+  theme_classic()
+```
+
+
+
+
 
