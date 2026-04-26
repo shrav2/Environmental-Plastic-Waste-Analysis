@@ -275,6 +275,8 @@ changed <- plastic_temp_gdp |>
 
 ```{r}
 #| fig-cap: Figure 1.1. Barplot for Change in Grand Total Plastic from 2019-2020, by Continent
+#| fig-alt: Figure 1.1 Barplot showing changes in grand total plastic collection across continents between 2019 to 2020.
+
 continent_year <- plastic_temp_gdp |>
   group_by(continent, Year) |>
   summarise(grand_total = sum(grand_total, na.rm = TRUE), .groups = "drop")
@@ -296,6 +298,7 @@ ggplot(continent_year, aes(x = continent, y = grand_total, fill = factor(Year)))
 
 ```{r}
 #| fig-cap: Figure 1.2. Boxplot for Change in Grand Total Plastic from 2019-2020, by Continent
+#| fig-alt: Figure 1.2. Boxplot showing change in grand total plastic collection across continents between 2019 and 2020. 
 ggplot(changed, aes(x = continent, y = change)) +
   geom_boxplot(outlier.shape = NA) +
   geom_jitter(width = 0.15, alpha = 0.5) +
@@ -314,6 +317,8 @@ We noticed an outlier in Africa that was that was heavily compressing the scale 
 
 ```{r}
 #| fig-cap: Figure 1.3. Boxplot for Change in Grand Total Plastic from 2019-2020, by Continent (excluding Africa outlier, Nigeria)
+#| fig-alt: Figure 1.2. Boxplot showing change in grand total plastic collection across continents between 2019 and 2020, with Nigeria (outlier) removed.
+
 ggplot(changed, aes(x = continent, y = change)) +
   geom_boxplot(outlier.shape = NA) +
   geom_jitter(width = 0.15, alpha = 0.5) +
@@ -331,6 +336,7 @@ ggplot(changed, aes(x = continent, y = change)) +
 
 ```{r}
 #| fig-cap: Figure 1.4. Barplot for Change in GDP from 2019-2020, by Continent
+#| fig-alt: Figure 1.4. Barplot showing change in GDP across continent from 2019 to 2020.
 continent_year <- plastic_temp_gdp |>
   group_by(continent, Year) |>
   summarise(gdp_nominal = sum(gdp_nominal, na.rm = TRUE), .groups = "drop")
@@ -359,6 +365,7 @@ gdp_changed <- plastic_temp_gdp %>%
 
 ```{r}
 #| fig-cap: Figure 1.5. Boxplot for Percent Change in GDP from 2019-2020, by GDP
+#| fig-alt: Figure 1.5. Boxplot showing percent change in GDP across continents from 2019 to 2020.
 #| warning: false
 ggplot(gdp_changed, aes(x = continent, y = gdp_pct_change)) +
   geom_boxplot() +
@@ -374,6 +381,8 @@ ggplot(gdp_changed, aes(x = continent, y = gdp_pct_change)) +
 ```{r}
 #| message: false 
 #| fig-cap: Figure 2. Hexbin plot of Mean Annual Temperature and Grand Total Plastic Collected (2019-2020) by Continent
+#| fig-alt: Figure 2. Hexbin plot showing mean annual temperature and grand total plastic collected from 2019 to 2020, by continent.
+
 ggplot(data = plastic_temp_gdp) +
   geom_hex(mapping = aes(x = AnnualMeanTemp, y = grand_total)) +
   scale_fill_gradient(low = "lightblue", high = "royalblue4") +
