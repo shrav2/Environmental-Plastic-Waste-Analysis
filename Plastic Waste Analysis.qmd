@@ -16,6 +16,10 @@ library(jsonlite)
 library(glue)
 library(purrr)
 library(countrycode)
+library(forstringr)
+library(scales)
+library(hexbin)
+
 ```
 
 ## Context
@@ -129,14 +133,14 @@ head(gdp, 10)
 ```{r}
 #| label: write-csv-gdp
 #| eval: false
-write_csv(x = gdp, file = "stat431-gdp")
+write_csv(x = gdp, file = "stat431-gdp.csv")
 ```
 
 The original GDP data set includes historical, current, and predicted data on GDP for countries around the world for the years for 1980-2029. We are particularly interested in the years 2019 and 2020. The 3-letter ISO code for each country is also included. There are 5 variables measuring GDP in different ways. For example, the variable `gdp_per_capita_nominal` measures GDP by dividing the country's total value of finished goods and services by its total population. `gdp_nominal` is the nominal GDP in billions of US dollars and `gdp_growth` expresses the GDP growth rate as a percentage. 
 
 ```{r}
 #| label: read-csv-gdp
-gdp <- read_csv("stat431-gdp")
+gdp <- read_csv("stat431-gdp.csv")
 gdp
 ```
 
@@ -148,7 +152,7 @@ gdp
 #| label: combine-temp-gdp-data
 # Keep gdp_per_capita_nominal variable
 gdp_per_capita <- gdp |>
-  select(country, year, gdp_per_capita_nominal)
+  select(country, year, gdp_nominal, gdp_per_capita_nominal)
 
 # Remove X5.yr.smooth variable from temperature data, join with gdp data set
 combined_temp_gdp <- temp |>
@@ -185,7 +189,18 @@ head(plastics_sum, 10)
 
 ```{r}
 # Combine plastics data with temp/GDP
-meta_data <- inner_join(plastics_sum, combined_temp_gdp, by = c("Country", "Code", "Year"))
+meta_data <- inner_join(plastics_sum, combined_temp_gdp, by = c("Code", "Year")) |>
+  select(-Country.y) |>
+  rename(Country = Country.x)
+```
+```{r}
+#| echo: false
+#| results: false
+meta_data$Country[meta_data$Country == "NIGERIA"] <- "Nigeria"
+meta_data$Country[meta_data$Country == "ECUADOR"] <- "Ecuador"
+meta_data$Country[meta_data$Country =="United Kingdom of Great Britain & Northern Ireland"] <- "United Kingdom"
+meta_data$Country[meta_data$Country == "Cote D_ivoire"] <- "Cote Divoire"
+
 head(meta_data, 10)
 ```
 
@@ -221,7 +236,162 @@ ggplot(data = meta_data, aes(x = num_events, y = grand_total, color = factor(Yea
   theme_classic()
 ```
 
+```{r}
+write_csv(x=meta_data, file = "stat431-meta.csv")
+```
+
+
+# Checkpoint 4
+
+```{r}
+#| label: read-in-meta-data
+#| echo: true
+#| output: false
+plastic_temp_gdp <- read_csv("stat431-meta.csv")
+```
+
+```{r}
+#| label: add-region-col
+plastic_temp_gdp <- plastic_temp_gdp |>
+  mutate(continent = countrycode(Country,
+                                  origin = "country.name",
+                                  destination = "continent"))
+```
+
+## RQ #1: How does change in GDP relate to change in the total amount of plastic collected?
+
+```{r}
+changed <- plastic_temp_gdp |>
+  group_by(Country, continent, Year) |>
+  summarise(grand_total = sum(grand_total, na.rm = TRUE), .groups = "drop") |>
+  pivot_wider(names_from = Year, values_from = grand_total) |>
+  rename(
+    total_2019 = `2019`,
+    total_2020 = `2020`
+  ) |>
+  mutate(change = total_2020 - total_2019) |>
+  drop_na(change, continent)
+```
+
+```{r}
+#| fig-cap: Figure 1.1. Barplot for Change in Grand Total Plastic from 2019-2020, by Continent
+continent_year <- plastic_temp_gdp |>
+  group_by(continent, Year) |>
+  summarise(grand_total = sum(grand_total, na.rm = TRUE), .groups = "drop")
+
+ggplot(continent_year, aes(x = continent, y = grand_total, fill = factor(Year))) +
+  geom_col(position = "dodge") +
+  labs(
+    title = "Grand Total by Continent (2019 vs 2020)",
+    x = "Continent",
+    y = "Grand Total",
+    fill = "Year"
+  ) +
+  scale_fill_manual(values = c("steelblue", "lightgreen")) +
+  theme_classic() + 
+  theme(plot.title = element_text(face = "bold"))
+```
 
 
 
+```{r}
+#| fig-cap: Figure 1.2. Boxplot for Change in Grand Total Plastic from 2019-2020, by Continent
+ggplot(changed, aes(x = continent, y = change)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.15, alpha = 0.5) +
+  scale_y_continuous(labels = comma) +
+  labs(
+    title = "Change in Grand Total by Continent",
+    subtitle = "Country-level change from 2019 to 2020",
+    x = "Continent",
+    y = "Change (2020 - 2019)"
+  ) +
+  theme_classic() + 
+  theme(plot.title = element_text(face = "bold"))
+```
+
+We noticed an outlier in Africa that was that was heavily compressing the scale of the boxplot. We identified the outlier to be Nigeria. 
+
+```{r}
+#| fig-cap: Figure 1.3. Boxplot for Change in Grand Total Plastic from 2019-2020, by Continent (excluding Africa outlier, Nigeria)
+ggplot(changed, aes(x = continent, y = change)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.15, alpha = 0.5) +
+  coord_cartesian(ylim = c(-30000, 30000))+
+  scale_y_continuous(labels = comma) +
+  labs(
+    title = "Change in Grand Total by Continent",
+    subtitle = "Country-level change from 2019 to 2020, excluding Nigeria",
+    x = "Continent",
+    y = "Change (2020 - 2019)"
+  ) +
+  theme_classic() + 
+  theme(plot.title = element_text(face = "bold"))
+```
+
+```{r}
+#| fig-cap: Figure 1.4. Barplot for Change in GDP from 2019-2020, by Continent
+continent_year <- plastic_temp_gdp |>
+  group_by(continent, Year) |>
+  summarise(gdp_nominal = sum(gdp_nominal, na.rm = TRUE), .groups = "drop")
+
+ggplot(continent_year, aes(x = continent, y = gdp_nominal, fill = factor(Year))) +
+  geom_col(position = "dodge") +
+  labs(
+    title = "Nominal GDP by Continent (2019 vs 2020)",
+    x = "Continent",
+    y = "Nominal GDP",
+    fill = "Year"
+  ) +
+  scale_fill_manual(values = c("steelblue", "lightgreen")) +
+  theme_classic() + 
+  theme(plot.title = element_text(face = "bold"))
+```
+
+
+```{r}
+# Calculating Percent Change in GDP from 2019 to 2020
+gdp_changed <- plastic_temp_gdp %>%
+  arrange(Country, Year) %>%
+  group_by(Country) %>%
+  mutate(gdp_pct_change = (gdp_nominal / lag(gdp_nominal) - 1) * 100)
+```
+
+```{r}
+#| fig-cap: Figure 1.5. Boxplot for Percent Change in GDP from 2019-2020, by GDP
+#| warning: false
+ggplot(gdp_changed, aes(x = continent, y = gdp_pct_change)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.2, alpha = 0.5) +
+  labs(y = "GDP % Change (2019-2020)", x = "Continent") + 
+  theme_classic() + 
+  theme(plot.title = element_text(face = "bold"))
+```
+
+
+## RQ #2: Is there a relationship between a country's mean annual temperature and the total amount of plastic collected?
+
+```{r}
+#| message: false 
+#| fig-cap: Figure 2. Hexbin plot of Mean Annual Temperature and Grand Total Plastic Collected (2019-2020) by Continent
+ggplot(data = plastic_temp_gdp) +
+  geom_hex(mapping = aes(x = AnnualMeanTemp, y = grand_total)) +
+  scale_fill_gradient(low = "lightblue", high = "royalblue4") +
+  geom_smooth(aes(x = AnnualMeanTemp, y = grand_total), 
+              method = "lm", se = FALSE, 
+              color = "black", linewidth = 0.5, lty = 2) +
+  labs(x = "Mean Annual Temperature (C°)", 
+       y = "Grand Total Plastic Collected", 
+       fill = "Number of Countries",
+       title = "Number of Countries Observed", 
+       subtitle = "For Mean Annual Temperature, Grand Total Plastic Collected Combination (2019 - 2020)") +
+  theme_classic() + 
+  theme(plot.title = element_text(face = "bold")) 
+```
+
+```{r}
+# Fitting a linear model
+plastic.fit <- lm(grand_total~AnnualMeanTemp, data = plastic_temp_gdp)
+summary(plastic.fit)
+```
 
