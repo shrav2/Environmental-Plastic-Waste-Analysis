@@ -3,6 +3,7 @@ title: "Environmental Plastic Waste Analysis"
 author: Shravani Subramanian
 format: html
 embed-resources: true
+theme: cerulean
 ---
 
 ```{r} 
@@ -19,7 +20,8 @@ library(countrycode)
 library(forstringr)
 library(scales)
 library(hexbin)
-
+library(broom)
+library(gt)
 ```
 
 ## Context
@@ -403,4 +405,146 @@ ggplot(data = plastic_temp_gdp) +
 plastic.fit <- lm(grand_total~AnnualMeanTemp, data = plastic_temp_gdp)
 summary(plastic.fit)
 ```
+Heatmap of Plastic Composition by Continent
+```{r}
+plastic_long <- plastic_temp_gdp %>%
+  pivot_longer(
+    cols = c(hdpe, ldpe, o, pet, pp, ps, pvc),
+    names_to = "plastic_type",
+    values_to = "amount"
+  )
+heatmap_data <- plastic_long %>%
+  group_by(continent, plastic_type) %>%
+  summarise(total_amount = sum(amount, na.rm = TRUE), .groups = "drop")
+
+heatmap_prop <- heatmap_data %>%
+  group_by(continent) %>%
+  mutate(prop = total_amount / sum(total_amount))
+
+ggplot(heatmap_prop, aes(x = plastic_type, y = continent, fill = prop)) +
+  geom_tile(color = "white") +
+  scale_fill_gradientn(colors = c("#03045E","#00B4D8", "#CAF0F8"),
+    labels = scales::percent
+  ) +
+  labs(title = "Plastic Composition by Continent",
+       fill = "Proportion",
+       x= "Plastic Type", 
+       y= "Continent") +
+  theme_minimal()
+```
+
+Stacked Barplot for Plastic Type Composition by Continent
+```{r}
+continent_plastic <- plastic_long %>%
+  group_by(continent, plastic_type) %>%
+  summarise(total_amount = sum(amount, na.rm = TRUE), .groups = "drop")
+
+ggplot(continent_plastic, aes(x = continent, y = total_amount, fill = plastic_type)) +
+  geom_col(position = "fill") +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_manual(values = c(
+    "hdpe" = "#809bce",
+    "ldpe" = "#95b8d1",
+    "o"    = "#b8e0d2",
+    "pet"  = "#d6eadf",
+    "pp"   = "#bde0fe",
+    "ps"   = "#a2d2ff",
+    "pvc"  = "#eac4df" 
+    ), 
+    labels = c(
+    "hdpe" = "HDPE",
+    "ldpe" = "LDPE",
+    "o" = "OTHER",
+    "pet" = "PET",
+    "pp" = "PP",
+    "ps" = "PS",
+    "pvc" = "PVC")
+    ) +
+  labs(
+    title = "Plastic Type Composition by Continent",
+    x = "Continent",
+    y = "Proportion",
+    fill = "Plastic Type"
+  ) +
+  theme_minimal()
+```
+Scatterplot of Log Grand total and Temperature
+```{r}
+ggplot(plastic_temp_gdp, aes(x = AnnualMeanTemp, y = grand_total, color = continent)) +
+  geom_point(alpha = 0.7, size = 3) +
+  scale_y_log10(labels = scales::comma) +
+  geom_smooth(method = "lm", se = FALSE, color = "black") +
+  labs(
+    title = "Temperature vs Plastic Collection (Log Scale)",
+    x = "Mean Annual Temperature (°C)",
+    y = "Total Plastic Collected (Log Scale)",
+    color = "Continent"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+rq1_long <- plastic_temp_gdp %>%
+  filter(Year %in% c(2019, 2020)) %>%
+  pivot_longer(
+    cols = c(hdpe, ldpe, o, pet, pp, ps, pvc),
+    names_to = "plastic_type",
+    values_to = "amount"
+  )
+rq1_summary <- rq1_long %>%
+  group_by(continent, plastic_type) %>%
+  summarise(
+    total_amount = sum(amount, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+rq1_prop_by_type <- rq1_summary %>%
+  group_by(plastic_type) %>%
+  mutate(prop = total_amount / sum(total_amount)) %>%
+  ungroup()
+
+rq1_wide_by_type <- rq1_prop_by_type %>%
+  select(continent, plastic_type, prop) %>%
+  pivot_wider(
+    names_from = plastic_type,
+    values_from = prop
+  )
+
+```
+```{r}
+rq1_wide_by_type %>%
+  gt() |>
+  tab_header(
+    title = "Proportion of Each Plastic Type by Continent",
+    subtitle = "Totals combined across 2019 and 2020"
+  ) |>
+  data_color(
+    columns = c(hdpe, ldpe, o, pet, pp, ps, pvc),
+    fn = col_numeric(
+      palette = c("#CAF0F8", "#0077B6"),  # light → dark blue
+      domain = c(0, 1)
+    )) |>
+  tab_style(
+    style = cell_text(weight = "bold", color = "black"),
+    locations = list(
+      cells_title(groups = "title"),          
+      cells_column_labels(everything())
+    )
+  ) |>
+  fmt_percent(
+    columns = c(hdpe, ldpe, o, pet, pp, ps, pvc),
+    decimals = 1
+  ) |>
+  cols_label(
+    continent = "Continent",
+    hdpe = "HDPE",
+    ldpe = "LDPE",
+    o = "Other",
+    pet = "PET",
+    pp = "PP",
+    ps = "PS",
+    pvc = "PVC"
+  )
+```
+
 
