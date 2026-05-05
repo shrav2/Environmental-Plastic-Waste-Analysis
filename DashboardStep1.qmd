@@ -1,0 +1,579 @@
+---
+title: "Plastic Waste"
+theme: cerulean
+format: 
+  dashboard:
+    orientation: columns
+embed-resources: true
+logo: LogoEnv.svg
+logo-alt: "Environmental Plastic Waste Logo"
+---
+
+```{css}
+.email-logo {
+  position: fixed;
+  top: 3px;
+  right: 28px;
+  z-index: 1000;
+}
+
+.email-logo img {
+  height: 38px;
+  width: auto;
+}
+```
+
+<div class="email-logo">
+  <img src="LogoEmail.svg" alt="Email logo">
+</div>
+
+```{css}
+.insta-logo {
+  position: fixed;
+  top: 3px;
+  right: 80px;
+  z-index: 1000;
+}
+
+.insta-logo img {
+  height: 38px;
+  width: auto;
+}
+```
+
+<div class="insta-logo">
+  <img src="LogoInsta.svg" alt="Insta logo">
+</div>
+
+```{r}
+#| label: load-packages
+#| message: false
+library(tidyverse)
+library(tidyr)
+library(gt)
+library(modelsummary)
+library(broom)
+library(lmtest)
+library(countrycode)
+library(scales)
+```
+
+```{r}
+#| label: load-meta-data
+
+plastic_temp_gdp <- read.csv("stat431-meta.csv")
+```
+
+## RQ 1
+
+
+### Fig 1.3 & 1.4
+
+```{r}
+#| fig-cap: Figure 1.3. Stacked bar chart of plastic type composition by continent
+#| fig-alt: Figure 1.3. Stacked bar chart showing composition of each plastic type within each continent. PET/other plastics make up majority of total plastic across all continents.”
+
+plastic_long <- plastic_temp_gdp |>
+  pivot_longer(
+    cols = c(hdpe, ldpe, o, pet, pp, ps, pvc),
+    names_to = "plastic_type",
+    values_to = "amount"
+  )
+
+continent_plastic <- plastic_long |>
+  group_by(continent, plastic_type) |>
+  summarise(total_amount = sum(amount, na.rm = TRUE), .groups = "drop")
+
+ggplot(continent_plastic, aes(x = continent, y = total_amount, fill = plastic_type)) +
+  geom_col(position = "fill") +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_manual(values = c(
+    "hdpe" = "#809bce",
+    "ldpe" = "#95b8d1",
+    "o" = "#b8e0d2",
+    "pet" = "#d6eadf",
+    "pp" = "#bde0fe",
+    "ps" = "#a2d2ff",
+    "pvc" = "#eac4df" 
+  ),
+     labels = c(
+    "hdpe" = "HDPE",
+    "ldpe" = "LDPE",
+    "o" = "OTHER",
+    "pet" = "PET",
+    "pp" = "PP",
+    "ps" = "PS",
+    "pvc" = "PVC")
+  ) +
+  labs(
+    title = "Plastic Type Composition by Continent",
+    x = "Continent",
+    y = "Proportion",
+    fill = "Plastic Type"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold"))
+```
+
+```{r}
+#| fig-cap: Figure 1.4. Heatmap of the proportion of different plastic types across continents
+#| fig-alt: Figure 1.4. Heatmap showing proportion of plastic types across continents. Other dominates in Europe, PET dominates in Africa.
+
+plastic_long <- plastic_temp_gdp |>
+  pivot_longer(
+    cols = c(hdpe, ldpe, o, pet, pp, ps, pvc),
+    names_to = "plastic_type",
+    values_to = "amount"
+  )
+heatmap_data <- plastic_long |>
+  group_by(continent, plastic_type) |>
+  summarise(total_amount = sum(amount, na.rm = TRUE), .groups = "drop")
+
+heatmap_prop <- heatmap_data |>
+  group_by(continent) |>
+  mutate(prop = total_amount / sum(total_amount))
+
+ggplot(heatmap_prop, aes(x = plastic_type, y = continent, fill = prop)) +
+  geom_tile(color = "white") +
+  scale_fill_gradientn(colors = c("#03045E","#00B4D8", "#CAF0F8"),
+    labels = scales::percent
+  ) +
+  labs(title = "Plastic Composition by Continent",
+       fill = "Proportion",
+       x= "Plastic Type", 
+       y= "Continent") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold"))
+```
+
+
+
+
+### Fig 1.1 & 1.2 {width = "50%"}
+::: panel-tabset 
+## Plastic Type by Continent
+</br>
+```{r}
+# Fig 1.2
+rq1_long <- plastic_temp_gdp |>
+  filter(Year %in% c(2019, 2020)) |>
+  pivot_longer(
+    cols = c(hdpe, ldpe, o, pet, pp, ps, pvc),
+    names_to = "plastic_type",
+    values_to = "amount"
+  )
+rq1_summary <- rq1_long |>
+  group_by(continent, plastic_type) |>
+  summarise(
+    total_amount = sum(amount, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+rq1_prop_by_type <- rq1_summary |>
+  group_by(plastic_type) |>
+  mutate(prop = total_amount / sum(total_amount)) |>
+  ungroup()
+
+rq1_wide_by_type <- rq1_prop_by_type |>
+  select(continent, plastic_type, prop) |>
+  pivot_wider(
+    names_from = plastic_type,
+    values_from = prop
+  )
+```
+
+```{r}
+rq1_wide_by_type |>
+  gt() |>
+  tab_header(
+    title = "Proportion of Each Plastic Type by Continent",
+    subtitle = "Totals combined across 2019 and 2020"
+  ) |>
+  data_color(
+    columns = c(hdpe, ldpe, o, pet, pp, ps, pvc),
+    fn = col_numeric(
+      palette = c("#CAF0F8", "#0077B6"),
+      domain = c(0, 1)
+    )) |>
+  tab_style(
+    style = cell_text(weight = "bold", color = "black"),
+    locations = list(
+      cells_title(groups = c("subtitle", "title")),          
+      cells_column_labels(everything()))
+  ) |>
+  fmt_percent(
+    columns = c(hdpe, ldpe, o, pet, pp, ps, pvc),
+    decimals = 1
+  ) |>
+  cols_label(
+    continent = "Continent",
+    hdpe = "HDPE",
+    ldpe = "LDPE",
+    o = "Other",
+    pet = "PET",
+    pp = "PP",
+    ps = "PS",
+    pvc = "PVC"
+  )
+```
+
+## PET Distribution Across Continents
+
+```{r}
+# Fig 1.1
+plastic_distribution_summary <- function(data, plastic_var, plastic_name) {
+  data |>
+    mutate(
+      plastic_proportion = {{ plastic_var }} / grand_total
+    ) |>
+    group_by(continent) |>
+    summarize(
+      mean_proportion = mean(plastic_proportion, na.rm = TRUE),
+      median_proportion = median(plastic_proportion, na.rm = TRUE),
+      total_amount = sum({{ plastic_var }}, na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    arrange(desc(mean_proportion)) |>
+    gt() |>
+    tab_header(
+      title = paste(plastic_name, "Distribution Across Continents"),
+      subtitle = "Proportion of selected plastic type relative to total plastic collected"
+    ) |>
+    cols_label(
+      continent = "Continent",
+      mean_proportion = "Mean %",
+      median_proportion = "Median %",
+      total_amount = "Total Count"
+    ) |>
+    data_color(
+      columns = c(mean_proportion, median_proportion),
+      fn = col_numeric(
+        palette = c("#CAF0F8", "#0077B6"),
+        domain = c(0, 1))
+    ) |>
+    data_color(
+      columns = c(total_amount),
+      fn = col_numeric(
+        palette = c("#CAF0F8", "#0077B6"),
+        domain = c(100, 161000))
+    ) |>
+    fmt_percent(
+      columns = c(mean_proportion, median_proportion),
+      decimals = 1
+    ) |>
+    fmt_number(
+      columns = total_amount,
+      decimals = 0
+    ) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = list(cells_column_labels(), cells_column_spanners())
+  ) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = cells_title(groups = c("title", "subtitle"))
+  )
+}
+
+plastic_distribution_summary(plastic_temp_gdp, pet, "PET")
+```
+:::
+
+## RQ 2
+
+### Fig 2.4, 2.3, 3.1, 3.3.
+
+```{r}
+#| message: false
+#| title: Temperature and Total Plastic by Continent
+#| fig-cap: Figure 2.4. Scatterplot of Total Plastic Collected and Mean Annual Temperature, colored by continent
+#| fig-alt: Figure 2.4. Scatterplot showing relationship between total plastic collected and mean annual temperature, colored by continent. Data is widely dispersed with slight positive trend. 
+
+ggplot(plastic_temp_gdp, aes(x = AnnualMeanTemp, y = grand_total, color = continent)) +
+  geom_point(alpha = 0.7, size = 3) +
+  scale_y_log10(labels = scales::comma) +
+  geom_smooth(method = "lm", se = FALSE, color = "black") +
+  labs(
+    title = "Temperature vs Plastic Collection (Log Scale)",
+    x = "Mean Annual Temperature (°C)",
+    y = "Total Plastic Collected (Log Scale)",
+    color = "Continent"
+  ) +
+  theme_classic() +
+  theme(
+    plot.title = element_text(face = "bold"))
+  
+```
+
+::: panel-tabset 
+
+## Total Plastic by Temp
+```{r}
+# Fig 2.3
+#| message: false 
+#| fig-cap: Figure 2.3. Hexbin plot of Mean Annual Temperature and Grand Total Plastic Collected (2019-2020)
+#| fig-alt: Figure 2.3. Hexbin plot showing mean annual temperature and grand total plastic collected from 2019 to 2020, by continent. Slight positive association present with few outliers. Most obserations cluster betweeen 10-30°C.
+
+ggplot(data = plastic_temp_gdp) +
+  geom_hex(mapping = aes(x = AnnualMeanTemp, y = grand_total)) +
+  scale_fill_gradient(low = "lightblue", high = "royalblue4") +
+  geom_smooth(aes(x = AnnualMeanTemp, y = grand_total), 
+              method = "lm", se = FALSE, 
+              color = "black", linewidth = 0.5, lty = 2) +
+  labs(x = "Mean Annual Temperature (°C)", 
+       y = "Grand Total Plastic Collected", 
+       fill = "Number of Countries",
+       title = "Number of Countries Observed", 
+       subtitle = "For Mean Annual Temperature, Grand Total Plastic Collected Combination (2019 - 2020)") +
+  theme_classic() + 
+  theme(plot.title = element_text(face = "bold")) 
+```
+
+## log(Total Plastic) by Temp
+```{r}
+# Fig 3.1
+#| message: false 
+#| fig-cap: Figure 3.1. Hexbin plot of Mean Annual Temperature and log(Grand Total Plastic Collected) by Continent (2019-2020)
+#| fig-alt: Figure 3.1. Hexbin plot showing relationship between log-transformed total plastic collected and mean annual temperature from 2019 to 2020. Data shows slight positive relationship and few outliers. Countries cluster between 10-30°C.
+
+ggplot(data = plastic_temp_gdp) +
+  geom_hex(mapping = aes(x = AnnualMeanTemp, y = log(grand_total))) +
+  scale_fill_gradient(low = "lightblue", high = "royalblue4") +
+  geom_smooth(aes(x = AnnualMeanTemp, y = log(grand_total)), 
+              method = "lm", se = FALSE, 
+              color = "black", linewidth = 0.5, lty = 2) +
+  labs(x = "Mean Annual Temperature (°C)", 
+       y = "log(Grand Total Plastic Collected)", 
+       fill = "Number of Countries",
+       title = "Number of Countries Observed", 
+       subtitle = "For Mean Annual Temperature, Grand Total Plastic Collected Combination (2019 - 2020)") +
+  theme_classic() + 
+  theme(plot.title = element_text(face = "bold")) 
+```
+
+## Linear Regression Result
+```{r}
+# Fig 3.3
+plastic.fit <- lm(log(grand_total)~AnnualMeanTemp, data = plastic_temp_gdp)
+coef_df <- tidy(plastic.fit) |>
+    mutate(
+      term = recode(
+        term,
+        "(Intercept)" = "Intercept",
+        "AnnualMeanTemp" = "Mean Annual Temperature"
+      )
+    )
+
+  stats <- glance(plastic.fit)
+
+  coef_df |>
+    gt() |>
+    tab_header(
+      title = "Linear Regression Results",
+      subtitle = "log(Grand Total Plastic Collected) vs.Mean Annual Temperature"
+    ) |>
+    cols_label(
+      term = "Variable",
+      estimate = "Estimate",
+      std.error = "Std. Error",
+      statistic = "t value",
+      p.value = "p-value"
+    ) |>
+    fmt_number(
+      columns = c(estimate, std.error, statistic),
+      decimals = 2
+    ) |>
+    fmt_number(
+      columns = p.value,
+      decimals = 3
+    ) |>
+    tab_source_note(
+      source_note = paste0(
+        "R² = ", round(stats$r.squared, 3),
+        " | Adjusted R² = ", round(stats$adj.r.squared, 3)
+      )
+    ) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = list(
+        cells_title(groups = c("title", "subtitle")),
+        cells_column_labels()
+      )
+    ) |> 
+    tab_style(
+      style = cell_fill(color = "lightblue"),
+      locations = cells_body(
+        columns = p.value,
+        rows = term == "Mean Annual Temperature"
+      )
+    )
+```
+:::
+
+### Fig 2.1 & 2.2
+
+::: panel-tabset
+
+## Total Plastic Stats/Temp by Continent
+```{r}
+# Fig 2.1
+make_continent_summary <- function(data) {
+  data |>
+    group_by(continent) |>
+    summarise(
+      annual_mean_temp   = mean(AnnualMeanTemp, na.rm = TRUE),
+      grand_total_mean   = mean(grand_total, na.rm = TRUE),
+      grand_total_median = median(grand_total, na.rm = TRUE),
+      grand_total_sd     = sd(grand_total, na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    arrange(annual_mean_temp) |>
+    gt() |>
+    fmt_number(
+      columns = c(
+        annual_mean_temp,
+        grand_total_mean,
+        grand_total_sd
+      ),
+      decimals = 2
+    ) |>
+    fmt_number(
+      columns = grand_total_median,
+      decimals = 0
+    ) |>
+    cols_label(
+      continent = "Continent",
+      annual_mean_temp = "Annual Mean Temp (°C)",
+      grand_total_mean = "Mean",
+      grand_total_median = "Median",
+      grand_total_sd = "SD"
+    ) |>
+    tab_spanner(
+      label = "Total Plastic Collected",
+      columns = c(grand_total_mean, 
+                  grand_total_median, grand_total_sd)
+    ) |>
+    tab_header(
+      title = "Total Plastic Collected Summary by Continent",
+    ) |>
+    data_color(
+    columns = c(annual_mean_temp),
+    fn = col_numeric(
+      palette = c("#CFECEC", "#D8BFD8"),
+      domain = c(10, 25))
+    ) |>
+     data_color(
+    columns = c(grand_total_mean),
+    fn = col_numeric(
+      palette = c("#C3F5F0", "#7393B3"),
+      domain = c(800, 18000))
+     ) |>
+     data_color(
+    columns = c(grand_total_median),
+    fn = col_numeric(
+      palette = c("#C3F5F0", "#7393B3"),
+      domain = c(800, 5000))
+     ) |>
+     data_color(
+    columns = c(grand_total_sd),
+    fn = col_numeric(
+      palette = c("#C3F5F0", "#7393B3"),
+      domain = c(1100, 39000))
+     ) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = list(cells_column_labels(), cells_column_spanners())
+      ) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = cells_title(groups = c("title", "subtitle"))
+  )
+}
+
+make_continent_summary(plastic_temp_gdp)
+```
+
+## Total Plastic Stats by Temp
+```{r}
+# Fig 2.2
+bin_labels <- c("<10°C", "10–15°C", "15–20°C", "20–25°C", "25°C+")
+
+temp_bins <- plastic_temp_gdp |>
+  mutate(
+    temp_bin = cut(
+      AnnualMeanTemp,
+      breaks = c(-Inf, 10, 15, 20, 25, Inf),
+      labels = bin_labels,
+      right = FALSE
+    )
+  )
+
+summary_df <- map_dfr(bin_labels, function(bin) {
+  temp_bins |>
+    filter(temp_bin == bin) |>
+    summarise(
+      temp_bin = bin,
+      mean = mean(grand_total, na.rm = TRUE),
+      median = median(grand_total, na.rm = TRUE),
+      sd = sd(grand_total, na.rm = TRUE)
+    )
+})
+
+summary_df |>
+  gt() |>
+  fmt_number(
+      columns = c(
+        mean,
+        sd
+      ),
+      decimals = 2
+  ) |>
+  fmt_number(
+    columns = median,
+    decimals = 0
+    ) |>
+  tab_header(
+    title = "Total Plastic Collected Summary Across Temperature Bins"
+  ) |>
+  data_color(
+    columns = temp_bin,
+    palette = c("#ADD8E6", "#D8BFD8")
+  ) |>
+     data_color(
+    columns = c(mean),
+    fn = col_numeric(
+      palette = c("#C3F5F0", "#7393B3"),
+      domain = c(2000, 15700))
+     ) |> data_color(
+    columns = c(median),
+    fn = col_numeric(
+      palette = c("#C3F5F0", "#7393B3"),
+      domain = c(950, 6400))
+     ) |> data_color(
+    columns = c(sd),
+    fn = col_numeric(
+      palette = c("#C3F5F0", "#7393B3"),
+      domain = c(2600, 31500))
+     ) |>
+    tab_spanner(
+      label = "Total Plastic Collected",
+      columns = c(mean, median, sd)
+    ) |>
+  cols_label(
+    temp_bin = "Annual Mean Temp (°C)",
+    mean = "Mean",
+    median = "Median",
+    sd = "SD"
+  ) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = list(cells_column_labels(), cells_column_spanners())
+  ) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_title(groups = c("title", "subtitle"))
+  )
+```
+:::

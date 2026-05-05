@@ -1,0 +1,635 @@
+---
+title: "Plastic Waste Analysis"
+author: "Madison Guan, Shravani Subramanian, Jade Gehrts"
+format: html
+theme: cerulean
+embed-resources: true
+code-fold: true
+---
+
+```{r}
+#| label: load-packages
+#| message: false
+library(tidyverse)
+library(gt)
+library(modelsummary)
+library(broom)
+library(lmtest)
+library(countrycode)
+library(scales)
+```
+
+```{r}
+#| label: load-meta-data
+
+plastic_temp_gdp <- read.csv("stat431-meta.csv")
+```
+
+
+# Data Context
+
+The data used in our analysis came from two separate data sets focusing on global plastic waste collection and annual mean temperature.
+
+## Plastic Waste Collection
+
+The data on plastic waste collection comes from Break Free From Plastic’s Brand Audit project, a global movement focused on reducing single-use plastics and raising awareness about plastic pollution. The data was collected through community brand audits, where volunteers gathered and categorized plastic waste found in their local areas. It was collected to identify sources/types of plastic pollution across the world. 
+
+The dataset includes observations from 2019 and 2020, which allows us to compare plastic waste across two different years. This is useful because plastic collection patterns may change over time due to differences in cleanup efforts, participation, location, population, or other factors like the COVID-19 pandemic in 2020. An observational unit represents one company within a country. 
+
+For our project, we are focusing on the total count of plastic collected across different countries and continents, and the seven plastic type categories: high density polyethylene (HDPE), low density polyethylene (LDPE), polyester (PET), polypropylene (PP), polystyrene (PS),  PVC, and other (O). With this information, we can compare both the amount of plastic collected and the types of plastic found across continents. This dataset is interesting because it connects real-world plastic pollution data while allowing for broader questions about geography, climate, and sustainability. 
+
+## Annual Mean Temperature
+
+The data on the mean temperatures of countries around the world was published by Kaggle. The data was scraped from the World Bank Climate Knowledge, a hub for global, climate-related data on historical and future climate, vulnerabilities, and impacts. 
+
+The information was then organized into a dataset including information on the annual mean temperature for all countries available from the World Bank Climate Knowledge Portal from the years 1901 to 2022. The 5 year smooth annual mean temperature was also included, which is useful for identifying long-term warming trends by reducing short-term, year-to-year fluctuations in climate. An observational unit is a country in a specific year and the data itself was collected yearly.
+
+The original data collected on temperature included the years 1901 to 2022, however, we are specifically interested in the years 2019 and 2020 since those years correspond to the data collected on plastic waste. The 3-letter ISO code for each country is also included, which allowed us to join data from the two different studies efficiently. The data on mean temperatures around the world was collected to measure and analyze changes in temperatures across countries. This allows researchers to detect global warming trends and create predictive models to forecast temperature changes in future years.
+
+
+# Research Questions
+
+After looking through the data, we we were interested in exploring the following two questions:
+
+1. How does the distribution of each type of plastic vary across continents?
+
+We are interested in seeing how plastic type differs across continents because while plastic pollution is a global issue, the types of plastic collected may not be the same everywhere. Looking at plastic type by continent helps us understand whether certain regions have higher proportions of specific plastics, such as polyester (PET), high density polyethylene (HDPE), or other (O) plastics, and can reveal patterns in plastic use, waste, and collection across different parts of the world.
+
+2. Is there a relationship between mean annual temperatures and the total amount of plastic collected?
+
+We are interested in exploring how temperature relates to total plastic collected because climate and geography may influence how much plastic waste is collected in different countries. Warmer countries may have different patterns of tourism, outdoor activity, population density, or waste exposure, which could affect plastic collection totals. By comparing mean annual temperature with total plastic collected, we can explore the relationship between temperature and plastic waste patterns.
+
+
+# How does plastic type differ across continents?
+
+## Figure 1.1.
+
+```{r}
+plastic_distribution_summary <- function(data, plastic_var, plastic_name) {
+  data |>
+    mutate(
+      plastic_proportion = {{ plastic_var }} / grand_total
+    ) |>
+    group_by(continent) |>
+    summarize(
+      mean_proportion = mean(plastic_proportion, na.rm = TRUE),
+      median_proportion = median(plastic_proportion, na.rm = TRUE),
+      total_amount = sum({{ plastic_var }}, na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    arrange(desc(mean_proportion)) |>
+    gt() |>
+    tab_header(
+      title = paste(plastic_name, "Distribution Across Continents"),
+      subtitle = "Proportion of selected plastic type relative to total plastic collected"
+    ) |>
+    cols_label(
+      continent = "Continent",
+      mean_proportion = "Mean %",
+      median_proportion = "Median %",
+      total_amount = "Total Count"
+    ) |>
+    data_color(
+      columns = c(mean_proportion, median_proportion),
+      fn = col_numeric(
+        palette = c("#CAF0F8", "#0077B6"),
+        domain = c(0, 1))
+    ) |>
+    data_color(
+      columns = c(total_amount),
+      fn = col_numeric(
+        palette = c("#CAF0F8", "#0077B6"),
+        domain = c(100, 161000))
+    ) |>
+    fmt_percent(
+      columns = c(mean_proportion, median_proportion),
+      decimals = 1
+    ) |>
+    fmt_number(
+      columns = total_amount,
+      decimals = 0
+    ) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = list(cells_column_labels(), cells_column_spanners())
+  ) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = cells_title(groups = c("title", "subtitle"))
+  )
+}
+
+plastic_distribution_summary(plastic_temp_gdp, pet, "PET")
+```
+
+Figure 1.1 summarizes the proportion of polyester (PET) plastic relative to the total amount of plastic collected in each country, grouped by continent. PET made up the largest average share of collected plastic in Africa, where the mean proportion was 60.8% and the median proportion was 71.6%. Oceania also had a high average PET proportion at 54.2%, but its total PET count was much smaller. Europe had the lowest average PET proportion at 21.8%. This suggests that PET was a much more dominant plastic category in Africa than in Europe or the Americas.
+
+## Figure 1.2.
+
+```{r}
+rq1_long <- plastic_temp_gdp |>
+  filter(Year %in% c(2019, 2020)) |>
+  pivot_longer(
+    cols = c(hdpe, ldpe, o, pet, pp, ps, pvc),
+    names_to = "plastic_type",
+    values_to = "amount"
+  )
+rq1_summary <- rq1_long |>
+  group_by(continent, plastic_type) |>
+  summarise(
+    total_amount = sum(amount, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+rq1_prop_by_type <- rq1_summary |>
+  group_by(plastic_type) |>
+  mutate(prop = total_amount / sum(total_amount)) |>
+  ungroup()
+
+rq1_wide_by_type <- rq1_prop_by_type |>
+  select(continent, plastic_type, prop) |>
+  pivot_wider(
+    names_from = plastic_type,
+    values_from = prop
+  )
+```
+
+```{r}
+rq1_wide_by_type |>
+  gt() |>
+  tab_header(
+    title = "Proportion of Each Plastic Type by Continent",
+    subtitle = "Totals combined across 2019 and 2020"
+  ) |>
+  data_color(
+    columns = c(hdpe, ldpe, o, pet, pp, ps, pvc),
+    fn = col_numeric(
+      palette = c("#CAF0F8", "#0077B6"),
+      domain = c(0, 1)
+    )) |>
+  tab_style(
+    style = cell_text(weight = "bold", color = "black"),
+    locations = list(
+      cells_title(groups = c("subtitle", "title")),          
+      cells_column_labels(everything()))
+  ) |>
+  fmt_percent(
+    columns = c(hdpe, ldpe, o, pet, pp, ps, pvc),
+    decimals = 1
+  ) |>
+  cols_label(
+    continent = "Continent",
+    hdpe = "HDPE",
+    ldpe = "LDPE",
+    o = "Other",
+    pet = "PET",
+    pp = "PP",
+    ps = "PS",
+    pvc = "PVC"
+  )
+```
+
+From Figure 1.2, we can see that Africa had the highest proportion of high density polyethylene (HDPE), low density polyethylene (LDPE), and polyester (PET) plastics collected. For polypropylene (PP) and polystyrene plastics (PS), Asia had the highest percent of collection. 
+
+## Figure 1.3.
+
+```{r}
+#| fig-cap: Figure 1.3. Stacked bar chart of plastic type composition by continent
+#| fig-alt: Figure 1.3. Stacked bar chart showing composition of each plastic type within each continent. PET/other plastics make up majority of total plastic across all continents.”
+
+plastic_long <- plastic_temp_gdp |>
+  pivot_longer(
+    cols = c(hdpe, ldpe, o, pet, pp, ps, pvc),
+    names_to = "plastic_type",
+    values_to = "amount"
+  )
+
+continent_plastic <- plastic_long |>
+  group_by(continent, plastic_type) |>
+  summarise(total_amount = sum(amount, na.rm = TRUE), .groups = "drop")
+
+ggplot(continent_plastic, aes(x = continent, y = total_amount, fill = plastic_type)) +
+  geom_col(position = "fill") +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_manual(values = c(
+    "hdpe" = "#809bce",
+    "ldpe" = "#95b8d1",
+    "o" = "#b8e0d2",
+    "pet" = "#d6eadf",
+    "pp" = "#bde0fe",
+    "ps" = "#a2d2ff",
+    "pvc" = "#eac4df" 
+  ),
+     labels = c(
+    "hdpe" = "HDPE",
+    "ldpe" = "LDPE",
+    "o" = "OTHER",
+    "pet" = "PET",
+    "pp" = "PP",
+    "ps" = "PS",
+    "pvc" = "PVC")
+  ) +
+  labs(
+    title = "Plastic Type Composition by Continent",
+    x = "Continent",
+    y = "Proportion",
+    fill = "Plastic Type"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold"))
+```
+
+Figure 1.3 shows the proportion of each plastic type collected within each continent. Each bar represents one continent, and the colors represent how much of that continent’s total plastic collection came from each plastic category. We can see that plastic type composition differs across continents. Other (O) plastic makes up a large portion of plastic collected in Europe, the Americas, and Oceania, while polyester (PET) makes up the largest portion in Africa. Asia has more of a mixed distribution, with noticeable amounts of PET, polypropylene (PP), and other plastics.
+
+## Figure 1.4.
+
+```{r}
+#| fig-cap: Figure 1.4. Heatmap of the proportion of different plastic types across continents
+#| fig-alt: Figure 1.4. Heatmap showing proportion of plastic types across continents. Other dominates in Europe, PET dominates in Africa.
+
+plastic_long <- plastic_temp_gdp |>
+  pivot_longer(
+    cols = c(hdpe, ldpe, o, pet, pp, ps, pvc),
+    names_to = "plastic_type",
+    values_to = "amount"
+  )
+heatmap_data <- plastic_long |>
+  group_by(continent, plastic_type) |>
+  summarise(total_amount = sum(amount, na.rm = TRUE), .groups = "drop")
+
+heatmap_prop <- heatmap_data |>
+  group_by(continent) |>
+  mutate(prop = total_amount / sum(total_amount))
+
+ggplot(heatmap_prop, aes(x = plastic_type, y = continent, fill = prop)) +
+  geom_tile(color = "white") +
+  scale_fill_gradientn(colors = c("#03045E","#00B4D8", "#CAF0F8"),
+    labels = scales::percent
+  ) +
+  labs(title = "Plastic Composition by Continent",
+       fill = "Proportion",
+       x= "Plastic Type", 
+       y= "Continent") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold"))
+```
+
+Looking at Figure 1.4, we can see the breakdown for each plastic type collected within each continent. Mostly notably, the majority of plastic collected was classified as “other” across the majority of continents, especially in Europe with other plastics making up about 70% of its total collected plastic. In Africa, polyester plastic made up the majority of its collected plastic. Across all continents, high density polyethylene, polystyrene, and PVC made up a small minority of the plastic collected. 
+
+## Conclusion:
+
+Overall, through our analysis we observed that some continents like Africa and Europe have large amounts of a specific type of plastic collected. For Africa it was polyester (PET) types and for Europe it was other (O) types of plastics collected. This indicates that through events, volunteers in Africa collected more plastics that originated from polyester fibers, soft drink bottles, food containers, etc. Africa also had the highest share of polyester, high density polyethylene, and low density polyethylene plastics collected across all other continents. On the other hand, Europe was the next eye-catcher with its large share of other types of plastics (~70%) as seen in Figure 1.4. In contrast, Asia had a relatively mixed distribution of plastic types collected and slightly higher proportions in polypropylene, polystyrene, and PVC plastics. Oceania seems to take up the least amount of plastic collected overall across all plastic types (Figure 1.2) as we have little data for Oceania as a whole compared to other continents (Figure 1.1). The Americas, however, have a moderately diverse distribution of plastic types collected with a mix of other, polypropylene, and PVC plastic types. The Americas also have a relatively small polyester plastic share compared to Africa. 
+
+Globally, it appears that other types of plastics collected are generally widespread and form dominant shares across continents (Figure 1.3). This is something we expected as “other” may include many different types of miscellaneous plastics that were found by volunteers. We observed that collected plastic types such as polystyrene, PVC, and high density polyethylene were generally minor globally. Overall, each continent has an interesting breakdown of plastic types collected and we would love to dive deeper into other factors that may be causing such patterns across the world in future data explorations! 
+
+
+# How does annual mean temperature relate to total plastic collected?
+
+## Figure 2.1.
+
+```{r}
+make_continent_summary <- function(data) {
+  data |>
+    group_by(continent) |>
+    summarise(
+      annual_mean_temp   = mean(AnnualMeanTemp, na.rm = TRUE),
+      grand_total_mean   = mean(grand_total, na.rm = TRUE),
+      grand_total_median = median(grand_total, na.rm = TRUE),
+      grand_total_sd     = sd(grand_total, na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    arrange(annual_mean_temp) |>
+    gt() |>
+    fmt_number(
+      columns = c(
+        annual_mean_temp,
+        grand_total_mean,
+        grand_total_sd
+      ),
+      decimals = 2
+    ) |>
+    fmt_number(
+      columns = grand_total_median,
+      decimals = 0
+    ) |>
+    cols_label(
+      continent = "Continent",
+      annual_mean_temp = "Annual Mean Temp (°C)",
+      grand_total_mean = "Mean",
+      grand_total_median = "Median",
+      grand_total_sd = "SD"
+    ) |>
+    tab_spanner(
+      label = "Total Plastic Collected",
+      columns = c(grand_total_mean, 
+                  grand_total_median, grand_total_sd)
+    ) |>
+    tab_header(
+      title = "Total Plastic Collected Summary by Continent",
+    ) |>
+    data_color(
+    columns = c(annual_mean_temp),
+    fn = col_numeric(
+      palette = c("#CFECEC", "#D8BFD8"),
+      domain = c(10, 25))
+    ) |>
+     data_color(
+    columns = c(grand_total_mean),
+    fn = col_numeric(
+      palette = c("#C3F5F0", "#7393B3"),
+      domain = c(800, 18000))
+     ) |>
+     data_color(
+    columns = c(grand_total_median),
+    fn = col_numeric(
+      palette = c("#C3F5F0", "#7393B3"),
+      domain = c(800, 5000))
+     ) |>
+     data_color(
+    columns = c(grand_total_sd),
+    fn = col_numeric(
+      palette = c("#C3F5F0", "#7393B3"),
+      domain = c(1100, 39000))
+     ) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = list(cells_column_labels(), cells_column_spanners())
+      ) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = cells_title(groups = c("title", "subtitle"))
+  )
+}
+
+make_continent_summary(plastic_temp_gdp)
+```
+
+From Figure 2.1, we can see that Africa has the highest annual mean temperature and the largest values across all grand total statistics (mean, median, standard deviation). This may suggest that higher mean annual temperatures are associated with greater plastic consumption. However, this relationship is not consistent among the other continents. Although the table is ordered by increasing temperature, the grand total statistics slightly fluctuate moving down the rows.
+
+## Figure 2.2.
+
+```{r}
+bin_labels <- c("<10°C", "10–15°C", "15–20°C", "20–25°C", "25°C+")
+
+temp_bins <- plastic_temp_gdp |>
+  mutate(
+    temp_bin = cut(
+      AnnualMeanTemp,
+      breaks = c(-Inf, 10, 15, 20, 25, Inf),
+      labels = bin_labels,
+      right = FALSE
+    )
+  )
+
+summary_df <- map_dfr(bin_labels, function(bin) {
+  temp_bins |>
+    filter(temp_bin == bin) |>
+    summarise(
+      temp_bin = bin,
+      mean = mean(grand_total, na.rm = TRUE),
+      median = median(grand_total, na.rm = TRUE),
+      sd = sd(grand_total, na.rm = TRUE)
+    )
+})
+
+summary_df |>
+  gt() |>
+  fmt_number(
+      columns = c(
+        mean,
+        sd
+      ),
+      decimals = 2
+  ) |>
+  fmt_number(
+    columns = median,
+    decimals = 0
+    ) |>
+  tab_header(
+    title = "Total Plastic Collected Summary Across Temperature Bins"
+  ) |>
+  data_color(
+    columns = temp_bin,
+    palette = c("#ADD8E6", "#D8BFD8")
+  ) |>
+     data_color(
+    columns = c(mean),
+    fn = col_numeric(
+      palette = c("#C3F5F0", "#7393B3"),
+      domain = c(2000, 15700))
+     ) |> data_color(
+    columns = c(median),
+    fn = col_numeric(
+      palette = c("#C3F5F0", "#7393B3"),
+      domain = c(950, 6400))
+     ) |> data_color(
+    columns = c(sd),
+    fn = col_numeric(
+      palette = c("#C3F5F0", "#7393B3"),
+      domain = c(2600, 31500))
+     ) |>
+    tab_spanner(
+      label = "Total Plastic Collected",
+      columns = c(mean, median, sd)
+    ) |>
+  cols_label(
+    temp_bin = "Annual Mean Temp (°C)",
+    mean = "Mean",
+    median = "Median",
+    sd = "SD"
+  ) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = list(cells_column_labels(), cells_column_spanners())
+  ) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_title(groups = c("title", "subtitle"))
+  )
+```
+
+In Figure 2.2, we can see that there is no consistent increase or decrease in grand total plastic collection as temperature increases. However, there is a pattern at the extreme temperatures with the highest temperature bin (25°C+) and the lowest temperature bin (<10°C) having relatively high mean and median totals. The middle temperature ranges have lower grand total means and medians. Overall, the warmest countries tend to have the highest grand total means and medians.
+
+## Figure 2.3.
+
+```{r}
+#| message: false 
+#| fig-cap: Figure 2.3. Hexbin plot of Mean Annual Temperature and Grand Total Plastic Collected (2019-2020)
+#| fig-alt: Figure 2.3. Hexbin plot showing mean annual temperature and grand total plastic collected from 2019 to 2020, by continent. Slight positive association present with few outliers. Most obserations cluster betweeen 10-30°C.
+
+ggplot(data = plastic_temp_gdp) +
+  geom_hex(mapping = aes(x = AnnualMeanTemp, y = grand_total)) +
+  scale_fill_gradient(low = "lightblue", high = "royalblue4") +
+  geom_smooth(aes(x = AnnualMeanTemp, y = grand_total), 
+              method = "lm", se = FALSE, 
+              color = "black", linewidth = 0.5, lty = 2) +
+  labs(x = "Mean Annual Temperature (°C)", 
+       y = "Grand Total Plastic Collected", 
+       fill = "Number of Countries",
+       title = "Number of Countries Observed", 
+       subtitle = "For Mean Annual Temperature, Grand Total Plastic Collected Combination (2019 - 2020)") +
+  theme_classic() + 
+  theme(plot.title = element_text(face = "bold")) 
+```
+
+Figure 2.3 shows the relationship between a country mean annual temperatures and the grand total amount of plastic collected for 2019 and 2020. The hexbin plot is useful because it groups nearby observations together, which helps reduce overlapping points. Most countries are clustered between about 10°C and 30°C with lower total plastic collection amounts. The trend line has a slight positive slope, suggesting that countries with higher mean annual temperatures may have somewhat higher plastic totals. However, the relationship does not appear very strong, and there are a few countries with much higher plastic totals than the rest. This suggests that temperature may be related to plastic collection, but other factors likely also influence the total amount of plastic collected.
+
+## Figure 2.4.
+
+```{r}
+#| message: false
+#| fig-cap: Figure 2.4. Scatterplot of Total Plastic Collected and Mean Annual Temperature, colored by continent
+#| fig-alt: Figure 2.4. Scatterplot showing relationship between total plastic collected and mean annual temperature, colored by continent. Data is widely dispersed with slight positive trend. 
+
+ggplot(plastic_temp_gdp, aes(x = AnnualMeanTemp, y = grand_total, color = continent)) +
+  geom_point(alpha = 0.7, size = 3) +
+  scale_y_log10(labels = scales::comma) +
+  geom_smooth(method = "lm", se = FALSE, color = "black") +
+  labs(
+    title = "Temperature vs Plastic Collection (Log Scale)",
+    x = "Mean Annual Temperature (°C)",
+    y = "Total Plastic Collected (Log Scale)",
+    color = "Continent"
+  ) +
+  theme_classic() +
+  theme(
+    plot.title = element_text(face = "bold"))
+  
+```
+
+Due to a large concentration of 0 value for total plastic, we scaled the y-axis to log values to reduce the skewness in the plot. As we can observe in Figure 2.4, countries in Europe have a large range of plastic amounts collected and seem to be clustered around 10-15 degrees Celsius. Asia also has a large range of total plastics collected and are clustered at temperatures 25-30 degrees Celsius. African countries on the other hand, have a slightly smaller range of total plastic collected (clustered at larger values of plastic collected), but a temperature range of around 17-30 degrees Celsius. The Americas have a very diverse temperature range from lowest to highest temperatures and an overall random scatter of plastics collected ranging from 0 to approximately 74,750. Oceania appeared to only have two countries where plastic was collected and they both had an annual mean temperature of around 23 degrees Celsius, with two highly varying amounts of plastics collected. 
+
+
+# Data Model for Mean Annual Temperature and Total Plastic Collected
+
+## Figure 3.1.
+
+```{r}
+#| message: false 
+#| fig-cap: Figure 3.1. Hexbin plot of Mean Annual Temperature and log(Grand Total Plastic Collected) by Continent (2019-2020)
+#| fig-alt: Figure 3.1. Hexbin plot showing relationship between log-transformed total plastic collected and mean annual temperature from 2019 to 2020. Data shows slight positive relationship and few outliers. Countries cluster between 10-30°C.
+
+ggplot(data = plastic_temp_gdp) +
+  geom_hex(mapping = aes(x = AnnualMeanTemp, y = log(grand_total))) +
+  scale_fill_gradient(low = "lightblue", high = "royalblue4") +
+  geom_smooth(aes(x = AnnualMeanTemp, y = log(grand_total)), 
+              method = "lm", se = FALSE, 
+              color = "black", linewidth = 0.5, lty = 2) +
+  labs(x = "Mean Annual Temperature (°C)", 
+       y = "log(Grand Total Plastic Collected)", 
+       fill = "Number of Countries",
+       title = "Number of Countries Observed", 
+       subtitle = "For Mean Annual Temperature, Grand Total Plastic Collected Combination (2019 - 2020)") +
+  theme_classic() + 
+  theme(plot.title = element_text(face = "bold")) 
+```
+
+Figure 3.1 shows the relationship between country mean annual temperatures and grand total amount of plastic collected for 2019 and 2020. The hexbin plot is useful because it groups nearby observations together, which helps reduce overlapping points. Most countries are clustered between about 10°C and 30°C with lower total plastic collection amounts. The trend line has a slight positive slope, suggesting that countries with higher mean annual temperatures may have somewhat higher plastic totals. However, the relationship does not appear very strong, and there are a few countries with much higher plastic totals than the rest. This suggests that temperature may be related to plastic collection, but other factors likely have a greater influence on total amount of plastic collected.
+
+## Figure 3.2.
+Checking Model Assumptions
+
+```{r}
+#| output: false
+# Fitting a linear model
+plastic.fit <- lm(log(grand_total)~AnnualMeanTemp, data = plastic_temp_gdp)
+summary(plastic.fit)
+```
+
+```{r}
+#| fig-cap: Figure 3.2. Diagnostic plots for the regression model - residuals vs. fitted plot, normal QQ-plot, and histogram residuals to assess model assumptions
+#| fig-alt: Figure 3.2. Diagnostic plots showing a residual vs. fitted plot with scattered points around zero, a QQ-plot indicating deviations from normality in the tails, and a histogram of residuals roughly centered around zero with a slight left skew. 
+
+par(mfrow=c(1,3))
+
+# Residuals vs. Fitted plot
+plot(resid(plastic.fit)~fitted(plastic.fit),
+     ylab="Residuals", xlab="Fitted", pch = 16, main = "Residuals vs. Fitted Plot")
+abline(h=0, lty = 2)
+
+# Normal QQ-plot of residuals
+qqnorm(resid(plastic.fit), ylab="Residuals", pch = 16)
+qqline(resid(plastic.fit), lty=2)
+
+# Histogram of residuals
+hist(resid(plastic.fit), col="lightblue",
+     main = "Hisogram of Residuals", xlab="Residuals")
+```
+
+## Figure 3.3.
+
+```{r}
+  coef_df <- tidy(plastic.fit) |>
+    mutate(
+      term = recode(
+        term,
+        "(Intercept)" = "Intercept",
+        "AnnualMeanTemp" = "Mean Annual Temperature"
+      )
+    )
+
+  stats <- glance(plastic.fit)
+
+  coef_df |>
+    gt() |>
+    tab_header(
+      title = "Linear Regression Results",
+      subtitle = "log(Grand Total Plastic Collected) vs.Mean Annual Temperature"
+    ) |>
+    cols_label(
+      term = "Variable",
+      estimate = "Estimate",
+      std.error = "Std. Error",
+      statistic = "t value",
+      p.value = "p-value"
+    ) |>
+    fmt_number(
+      columns = c(estimate, std.error, statistic),
+      decimals = 2
+    ) |>
+    fmt_number(
+      columns = p.value,
+      decimals = 3
+    ) |>
+    tab_source_note(
+      source_note = paste0(
+        "R² = ", round(stats$r.squared, 3),
+        " | Adjusted R² = ", round(stats$adj.r.squared, 3)
+      )
+    ) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = list(
+        cells_title(groups = c("title", "subtitle")),
+        cells_column_labels()
+      )
+    ) |> 
+    tab_style(
+      style = cell_fill(color = "lightblue"),
+      locations = cells_body(
+        columns = p.value,
+        rows = term == "Mean Annual Temperature"
+      )
+    )
+    
+```
+
+We fit a linear regression model to explore the relationship between mean annual temperature and total plastic collected. Because the original data contained extreme outliers, countries with a relatively high grand total plastic count compared to the other countries, we log-transformed the response (total plastic collected) to reduce skewness and stabilize variance as seen in Figure 3.1.
+
+From the model summary in Figure 3.3, the fitted model is __log(total plastic) = 6.21 + 0.05(mean annual temperature)__. The estimated slope of 0.05 (SE = 0.03, p = 0.177) suggests a weak positive association, indicating that a one-degree °C increase in mean annual temperature is associated with a ~5% increase (e^0.05) in total plastic collected. However, this relationship is not statistically significant as the model explains very little variability in total plastic collected (R^2 = 0.02). Looking at the plots in Figure 3.2, it is reasonable to assume that the linear form equal variance assumptions are satisfied. There is some concern regarding the normality of the residuals as seen in the deviation from the reference line in the QQ-plot. Thus, statistical inference using this model should be interpreted with caution. 
+
+In conclusion, there is insufficient evidence to conclude that a meaningful relationship between mean annual temperature and total plastic collected exists, based on this model. This suggests that other factors are likely more important in explaining the variation in total plastic collection across countries. 
+
+## Conclusion:
+
+Overall, the analysis on annual mean temperature and total plastic collected across countries provides limited evidence on a meaningful relationship between the two. As seen in the continent-level summary (Figure 2.1) and the temperature-level summary (Figure 2.3), regions with the highest mean annual temperatures have the highest mean and median total plastic amounts. However, this positive association is not consistent across other continents and temperature levels, which shows that temperature alone does not reliably explain changes in total plastic collection amounts. Similarly, the scatterplots and hexbin plots (Figures 2.3, 2.4, 3.1) show a slight upward trend where countries with higher temperatures may tend to collect more plastic. However, there is lots of variability within temperature ranges, and different continents show distinct patterns in plastic collection, suggesting that total plastic collected is influenced by other factors as well. The regression results (Figure 3.3) reflect these inconsistencies as the linear model of total plastic collected as a function of annual mean temperature explains only about 2% of the variability in total plastic collected, confirming that annual mean temperature is not a reliable predictor of total plastic collection on its own.
+
+Although warmer countries and regions may tend to have a slightly higher total plastic collection count, the relationship between annual mean temperatures and total plastic is weak and inconsistent. This indicates that other factors are likely much more significant factors in predicting total plastic collection than annual mean temperature alone. In future data explorations, we would be interested in looking into other factors that have a much more significant effect on plastic waste patterns across the world!
+
+
+
+
+
+
