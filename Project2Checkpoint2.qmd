@@ -1,0 +1,504 @@
+---
+title: "Plastic Collection: Global and Nigeria"
+format: 
+  dashboard:
+    orientation: columns
+embed-resources: true
+---
+
+```{css}
+.email-logo {
+  position: fixed;
+  top: 3px;
+  right: 28px;
+  z-index: 1000;
+}
+
+.email-logo img {
+  height: 38px;
+  width: auto;
+}
+```
+
+<div class="email-logo">
+  <img src="LogoEmail.svg" alt="Email logo">
+</div>
+
+```{css}
+.insta-logo {
+  position: fixed;
+  top: 3px;
+  right: 80px;
+  z-index: 1000;
+}
+
+.insta-logo img {
+  height: 38px;
+  width: auto;
+}
+```
+
+<div class="insta-logo">
+  <img src="LogoInsta.svg" alt="Insta logo">
+</div>
+
+```{r}
+#| label: load-packages
+#| message: false
+library(tidyverse)
+library(tidyr)
+library(gt)
+library(broom)
+library(countrycode)
+library(scales)
+library(gganimate)
+library(gifski)
+library(htmltools)
+library(leaflet)
+library(rnaturalearth)
+```
+
+```{r}
+#| label: load-meta-data
+
+plastic_temp_gdp <- read.csv("stat431-meta.csv")
+```
+
+# Global Temperature and Total Plastic Collection
+
+## How does annual mean temperature relate to total plastic collected?
+
+### Total Plastic Stats/Temp by Continent
+```{r}
+# Fig 2.1
+make_continent_summary <- function(data) {
+  data |>
+    group_by(continent) |>
+    summarise(
+      annual_mean_temp   = mean(AnnualMeanTemp, na.rm = TRUE),
+      grand_total_mean   = mean(grand_total, na.rm = TRUE),
+      grand_total_median = median(grand_total, na.rm = TRUE),
+      grand_total_sd     = sd(grand_total, na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    arrange(annual_mean_temp) |>
+    gt() |>
+    fmt_number(
+      columns = c(
+        annual_mean_temp,
+        grand_total_mean,
+        grand_total_sd
+      ),
+      decimals = 2
+    ) |>
+    fmt_number(
+      columns = grand_total_median,
+      decimals = 0
+    ) |>
+    cols_label(
+      continent = "Continent",
+      annual_mean_temp = "Annual Mean Temp (°C)",
+      grand_total_mean = "Mean",
+      grand_total_median = "Median",
+      grand_total_sd = "SD"
+    ) |>
+    tab_spanner(
+      label = "Total Plastic Collected",
+      columns = c(grand_total_mean, 
+                  grand_total_median, grand_total_sd)
+    ) |>
+    tab_header(
+      title = "Total Plastic Collected Summary by Continent",
+    ) |>
+    data_color(
+    columns = c(annual_mean_temp),
+    fn = col_numeric(
+      palette = c("#CFECEC", "#D8BFD8"),
+      domain = c(10, 25))
+    ) |>
+     data_color(
+    columns = c(grand_total_mean),
+    fn = col_numeric(
+      palette = c("#C3F5F0", "#7393B3"),
+      domain = c(800, 18000))
+     ) |>
+     data_color(
+    columns = c(grand_total_median),
+    fn = col_numeric(
+      palette = c("#C3F5F0", "#7393B3"),
+      domain = c(800, 5000))
+     ) |>
+     data_color(
+    columns = c(grand_total_sd),
+    fn = col_numeric(
+      palette = c("#C3F5F0", "#7393B3"),
+      domain = c(1100, 39000))
+     ) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = list(cells_column_labels(), cells_column_spanners())
+      ) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = cells_title(groups = c("title", "subtitle"))
+  )
+}
+
+make_continent_summary(plastic_temp_gdp)
+```
+
+### Country-Level Temperature and Total Plastic by Continent
+```{r}
+#| message: false
+#| title: Country-Level Temperature and Total Plastic by Continent
+#| fig-cap: Figure 1.1. Scatterplot of Total Plastic Collected and Mean Annual Temperature, colored by continent
+#| fig-alt: Figure 1.1. Scatterplot showing relationship between total plastic collected and mean annual temperature, colored by continent. Data is widely dispersed with slight positive trend. 
+#| out-width: 60%
+
+plastic_temp_gdp$continent <- factor(
+  plastic_temp_gdp$continent,
+  levels = c("Europe", "Americas", "Oceania", "Asia", "Africa")
+)
+
+scatter <- ggplot(plastic_temp_gdp, aes(x = AnnualMeanTemp, y = grand_total)) +
+  geom_point(aes(color = continent, group = 1L), alpha = 0.7, size = 3) +
+  scale_y_log10(labels = scales::comma) +
+  transition_states(continent,
+                    transition_length = 1,
+                    state_length = 0.5) +
+  labs(
+    title = "Temperature vs Plastic Collection (Log Scale)",
+    x = "Mean Annual Temperature (°C)",
+    y = "Total Plastic Collected (Log Scale)",
+    color = "Continent"
+    ) +
+  theme_classic() +
+  theme(
+    plot.title = element_text(face = "bold"))
+
+anim_save("scatter.gif", animate(scatter))
+
+tags$img(src = "scatter.gif", width = "100%")
+```
+
+
+## Plots
+
+### Total Plastic Stats by Temp
+```{r}
+# Fig 2.2
+bin_labels <- c("<10°C", "10–15°C", "15–20°C", "20–25°C", "25°C+")
+
+temp_bins <- plastic_temp_gdp |>
+  mutate(
+    temp_bin = cut(
+      AnnualMeanTemp,
+      breaks = c(-Inf, 10, 15, 20, 25, Inf),
+      labels = bin_labels,
+      right = FALSE
+    )
+  )
+
+summary_df <- map_dfr(bin_labels, function(bin) {
+  temp_bins |>
+    filter(temp_bin == bin) |>
+    summarise(
+      temp_bin = bin,
+      mean = mean(grand_total, na.rm = TRUE),
+      median = median(grand_total, na.rm = TRUE),
+      sd = sd(grand_total, na.rm = TRUE)
+    )
+})
+
+summary_df |>
+  gt() |>
+  fmt_number(
+      columns = c(
+        mean,
+        sd
+      ),
+      decimals = 2
+  ) |>
+  fmt_number(
+    columns = median,
+    decimals = 0
+    ) |>
+  tab_header(
+    title = "Total Plastic Collected Summary Across Temperature Bins"
+  ) |>
+  data_color(
+    columns = temp_bin,
+    palette = c("#ADD8E6", "#D8BFD8")
+  ) |>
+     data_color(
+    columns = c(mean),
+    fn = col_numeric(
+      palette = c("#C3F5F0", "#7393B3"),
+      domain = c(2000, 15700))
+     ) |> data_color(
+    columns = c(median),
+    fn = col_numeric(
+      palette = c("#C3F5F0", "#7393B3"),
+      domain = c(950, 6400))
+     ) |> data_color(
+    columns = c(sd),
+    fn = col_numeric(
+      palette = c("#C3F5F0", "#7393B3"),
+      domain = c(2600, 31500))
+     ) |>
+    tab_spanner(
+      label = "Total Plastic Collected",
+      columns = c(mean, median, sd)
+    ) |>
+  cols_label(
+    temp_bin = "Annual Mean Temp (°C)",
+    mean = "Mean",
+    median = "Median",
+    sd = "SD"
+  ) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = list(cells_column_labels(), cells_column_spanners())
+  ) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_title(groups = c("title", "subtitle"))
+  )
+```
+
+
+
+### Total Plastic by Temp
+```{r}
+#| message: false 
+#| fig-cap: Figure 1.2. Hexbin plot of Mean Annual Temperature and Grand Total Plastic Collected (2019-2020)
+#| fig-alt: Figure 1.2. Hexbin plot showing mean annual temperature and grand total plastic collected from 2019 to 2020, by continent. Slight positive association present with few outliers. Most obserations cluster betweeen 10-30°C.
+#| out-width: 65%
+
+top_point <- plastic_temp_gdp[which.max(plastic_temp_gdp$grand_total), ]
+
+ggplot(data = plastic_temp_gdp) +
+  geom_hex(mapping = aes(x = AnnualMeanTemp, y = grand_total)) +
+  scale_fill_gradient(low = "lightblue", high = "royalblue4") +
+  geom_smooth(aes(x = AnnualMeanTemp, y = grand_total), 
+              method = "lm", se = FALSE, 
+              color = "black", linewidth = 0.5, lty = 2) +
+  labs(x = "Mean Annual Temperature (°C)", 
+       y = "Total Plastic Collected", 
+       fill = "Number of Countries",
+       title = "Number of Countries Observed", 
+       subtitle = "For Mean Annual Temperature, Total Plastic Collected Combination (2019 - 2020)") +
+  geom_point(data = top_point,
+           aes(x = AnnualMeanTemp, y = grand_total),
+           color = "lightblue", size = 3) +
+
+  geom_label(data = top_point,
+           aes(x = AnnualMeanTemp, y = grand_total,
+               label = paste0("Nigeria")),
+           nudge_y = -17000,
+           nudge_x = -1,
+           vjust = -0.5,
+           fill = "white") + 
+  theme_classic() + 
+  theme(plot.title = element_text(face = "bold")) 
+```
+
+# Nigeria 
+
+
+```{r}
+meta_data <- read.csv("OutsidePlasticData.csv")
+
+nigeria <- ne_countries(country = "Nigeria", returnclass = "sf")
+
+meta_data <- meta_data |>
+  filter(str_detect(Location, pattern = "Nigeria") | str_detect(Organization, pattern = "Nigeria")) |> 
+  select(8, 12, 13, 14, 15, 16, 26, 27, 
+         Year, 
+         Totalltems_EventRecord, 
+         PCT_PlasticAndFoam, 
+         PCT_Glass_Rubber_Lumber_Metal, 
+         SUM_Hard_PlasticBeverageBottle, 
+         SUM_Hard_OtherPlasticBottle, 
+         SUM_HardOrSoft_PlasticBottleCap,
+         SUM_PlasticOrFoamFoodContainer, 
+         SUM_Hard_BucketOrCrate, 
+         SUM_Hard_Lighter, 
+         SUM_OtherHardPlastic, 
+         SUM_PlasticOrFoamPlatesBowlsCup, 
+         SUM_HardSoft_PersonalCareProduc, 
+         SUM_HardSoftLollipopStick_EarBu, 
+         SUM_Soft_Bag, 
+         SUM_Soft_WrapperOrLabel, 
+         SUM_Soft_Straw, 
+         SUM_Soft_OtherPlastic, 
+         SUM_Soft_CigaretteButts, 
+         Fishing_Net, 
+         SUM_Foam_OtherPlasticDebris, 
+         SUM_OtherPlasticDebris, 
+         NAME, 
+         COUNTRY, 
+         ISO_CODE,
+         ISO_CC, 
+         ISO_SUB, 
+         ) |>
+  slice(-c(1, 16))
+```
+
+##
+
+### Map Of Nigeria
+```{r}
+#| title: Map of Nigeria
+leaflet() |>
+  addTiles() |> 
+  setView(lng = 8.6753, lat = 9.0820, zoom = 5) |>
+  addPolygons(
+    data = nigeria,
+    fill = FALSE,
+    color = "black",
+    weight = 3
+  ) |>
+  addMarkers(
+    lng = c(3.3792, 7.0134),
+    lat = c(6.5244, 4.8156),
+    popup = c("Lagos", "Rivers (Port Harcourt)")
+  )
+```
+
+
+
+### Interactive Map of Lagos
+
+:::{.card title = "Neighborhoods within Lagos"}
+
+Click on a neighborhood to see the most common plastics collected from beach cleanups in Lagos!
+
+```{r}
+lagos_neighborhoods <- c(
+  "Agege",
+  "Ibeju Lekki",
+  "Eti Osa",
+  "Apapa",
+  "Amuwo Odofin",
+  "Surulere"
+)
+
+top3_plastic_types <- meta_data |>
+  filter(SubCountry_L2_FromSource %in% lagos_neighborhoods) |>
+  select(
+    SubCountry_L2_FromSource,
+    starts_with("SUM_")
+  ) |>
+  group_by(SubCountry_L2_FromSource) |>
+  summarize(across(starts_with("SUM_"), sum, na.rm = TRUE)) |>
+  pivot_longer(
+    cols = starts_with("SUM_"),
+    names_to = "plastic_type",
+    values_to = "count"
+  ) |>
+  group_by(SubCountry_L2_FromSource) |>
+  slice_max(order_by = count, n = 3, with_ties = FALSE) |>
+  arrange(SubCountry_L2_FromSource, desc(count))
+```
+
+```{r}
+leaflet() |>
+  addTiles() |> 
+  setView(lng = 3.3792, lat = 6.5, zoom = 8.5) |>
+  addMarkers(
+    lng = c(3.30569, 3.85554, 3.58276, 3.34551, 3.39377, 3.36224),
+    lat = c(6.62931, 6.44513, 6.46518, 6.41186, 6.39360, 6.51806),
+    popup = c("<b>Neighborhood: Agege</b><br>Beverage Bottles, Wrappers/Labels, Food Containers",
+              "<b>Neighborhood: Ibeju Lekki</b><br>Wrappers/Labels, Bags", 
+              "<b>Neighborhood: Eti Osa</b><br>Bottle Caps, Plates/Bowls/Cups, Beverage Bottles",
+              "<b>Neighborhood: Apapa</b><br>Beverage Bottles, Bags, Wrappers/Labels", 
+              "<b>Neighborhood: Amuwo Odofin</b><br>Beverage Bottles, Bags, Debris", 
+              "<b>Neighborhood: Surulere</b><br>Debris"))
+
+```
+
+:::
+
+
+
+##
+
+### Why Nigeria?
+
+:::{.card title="Why Nigeria?"}
+:::{.card-body style="background: linear-gradient(to bottom, #ADD8E6, #D8BFD8); color: black;"}
+
+In the summary table of total plastic collected by continent-level mean annual temperature, Africa had the highest mean temperature and the highest total plastic statistic values. This was also consistent in our scatterplot of country-level mean annual temperature and total plastic. In our hexbin plot, we could see that **Nigeria** was a clear outlier, with an extremely high plastic collection total and one of the highest mean temperatures, making it an interesting country to look into. 
+
+:::
+
+:::
+
+
+### Context
+:::{.card title="Beach Clean Ups in Nigeria"}
+:::{.card-body style="background: linear-gradient(to bottom, #C3CCDF); color: black;"}
+
+We used information on beach plastic cleanups in Nigeria (specifically Lagos and Rivers) from 2017-2018 provided by The Earth Challenge, an app where volunteers document plastic pollution found in the environment. 
+
+:::
+:::
+
+
+### Annual Mean Temperatures Lagos Rivers
+
+:::{.card title="Mean Temperatures in Lagos and Rivers"}
+:::{.card-body style="background: linear-gradient(to bottom, #D8BFD8); color: black;"}
+
+In 2018, WeatherSpark’s Lagos weather history reported data with Lagos showing consistently warm conditions, averaging 26.7°C. For Rivers State, Port Harcourt provides a climate reference that temperatures were typically around 25.7°C in 2018.
+:::
+:::
+
+
+### Plastic Collected
+
+<b>Counts for the Top 3 Plastic Items Found in Lagos Beach Cleanups (2017-2018)</b>
+
+```{r}
+lagos_top3_plastic <- meta_data |>
+  filter(SubCountry_L1_FromSource == "Lagos") |>
+  select(starts_with("SUM_"), Fishing_Net) |>
+  pivot_longer(everything(), names_to = "plastic_type", values_to = "total") |>
+  group_by(plastic_type) |>
+  summarise(total = sum(total, na.rm = TRUE)) |>
+  arrange(desc(total)) |>
+  slice_head(n = 3) |>
+  mutate(
+    plastic_type = str_remove(plastic_type, "SUM_"),
+    plastic_type = str_replace_all(plastic_type, "_", " ")
+  )
+
+```
+
+::: {.valuebox color="#B2EBF2" icon="fa-bottle-water"}
+## `r lagos_top3_plastic$plastic_type[1]`
+
+<b>Plastic Bottles:</b>
+
+`r scales::comma(lagos_top3_plastic$total[1])`
+:::
+
+::: {.valuebox color="#00BCD4" icon="fa-tag"}
+## `r lagos_top3_plastic$plastic_type[2]`
+
+<b>Bottle Caps:</b>
+
+`r scales::comma(lagos_top3_plastic$total[2])`
+:::
+
+::: {.valuebox color="#A5D6A7" icon="fa-layer-group"}
+## `r lagos_top3_plastic$plastic_type[3]`
+
+<b>Wrappers & Labels:</b> 
+
+`r scales::comma(lagos_top3_plastic$total[3])`
+:::
+
+
+
