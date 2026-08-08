@@ -18,3 +18,6 @@ We included annual mean temperature data from the World Bank Climate Knowledge P
 
 1) Run the Project 2 Final Deliverable QMD in Quarto/R Studio.
 2) Run Document.
+
+## Interactive Dashboard Demo
+![Interactive dashboard demo](Interactive%20Dashboard%20Demo.gif)
