@@ -13,3 +13,8 @@ We included annual mean temperature data from the World Bank Climate Knowledge P
 
 1) How does the distribution of plastic types vary across continents?
 2) Is there a relationship between mean annual temperature and total plastic collected?
+
+## A Guide to View the Dashboard
+
+1) Run the Project 2 Final Deliverable QMD in Quarto/R Studio.
+2) Run Document.
